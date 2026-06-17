@@ -297,10 +297,35 @@
           <div class="field">
             <label>Target book (soft book)</label>
             <select id="tbook">
-              <option>Fliff</option><option>Bovada</option><option>Rebet</option>
-              <option>MyBookie</option><option>Sportzino</option><option>OnyxOdds</option>
-              <option>DraftKings</option><option>FanDuel</option><option>BetMGM</option>
-              <option>Caesars</option><option>PointsBet</option><option>Other</option>
+              <optgroup label="Sweepstakes / Social">
+                <option>Fliff</option>
+                <option>Rebet</option>
+                <option>Sportzino</option>
+                <option>OnyxOdds</option>
+                <option>Kalshi</option>
+                <option>Thrillz</option>
+              </optgroup>
+              <optgroup label="Offshore">
+                <option>Bovada</option>
+                <option>MyBookie</option>
+                <option>Sportsbetting.ag</option>
+                <option>BetOnline</option>
+                <option>Xbet</option>
+                <option>BookiePro</option>
+              </optgroup>
+              <optgroup label="P2P / Exchange">
+                <option>Prophet Exchange</option>
+                <option>NoVig</option>
+              </optgroup>
+              <optgroup label="US Regulated (if accessible)">
+                <option>DraftKings</option>
+                <option>FanDuel</option>
+                <option>BetMGM</option>
+                <option>Caesars</option>
+                <option>PointsBet</option>
+                <option>ESPN Bet</option>
+              </optgroup>
+              <option>Other</option>
             </select>
           </div>
         </div>
@@ -320,7 +345,7 @@
           </div>
           <div class="field">
             <label>Your side</label>
-            <select id="side">
+            <select id="side" onchange="updateSideLabels()">
               <option value="a">Over / Home / Yes / Favorite</option>
               <option value="b">Under / Away / No / Dog</option>
             </select>
@@ -328,6 +353,25 @@
           <div class="field">
             <label>Target line (American odds)</label>
             <input type="number" id="tline" placeholder="-110" step="1">
+          </div>
+        </div>
+
+        <!-- Market width — always visible, applies to both main and prop -->
+        <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Market width</span>
+            <span style="font-size:10px;color:var(--text3);background:var(--border);padding:1px 6px;border-radius:99px">from OddsJam WIDTH column — applies to main markets AND props</span>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label>Width value</label>
+              <input type="number" id="marketWidth" placeholder="e.g. 20" min="1" max="100" step="1" oninput="updateWidthDisplay()">
+              <div class="hint">Tighter = sharper market. ≤20 = full EV. 21–25 = slight penalty. 26–30 = moderate. 30+ = avoid.</div>
+            </div>
+            <div class="field">
+              <label>Confidence rating</label>
+              <div id="widthDisplay" style="padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);font-size:13px;color:var(--text2);margin-top:4px;min-height:36px;display:flex;align-items:center">Enter width to see rating</div>
+            </div>
           </div>
         </div>
       </div>
@@ -442,8 +486,19 @@
       <!-- Sharp Lines -->
       <div class="card">
         <div class="card-title">Sharp book lines (Pinnacle · Circa · Prophet Exchange)</div>
+
+        <!-- Dynamic side reference label -->
+        <div id="sideRefBox" style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--blue);line-height:1.6">
+          <strong>Side A</strong> = the odds for <span id="sideALabel" style="font-weight:700">Over / Home / Favorite</span> &nbsp;·&nbsp;
+          <strong>Side B</strong> = the odds for <span id="sideBLabel" style="font-weight:700">Under / Away / Dog</span><br>
+          <span style="opacity:0.8">Enter both sides from the <em>same book</em> on the same row. You are betting <strong>Side A</strong>.</span>
+        </div>
+
         <div class="sharp-hdr">
-          <span>Book</span><span>Side A odds</span><span>Side B odds</span><span></span>
+          <span>Book</span>
+          <span id="hdrA" style="color:var(--green);font-weight:600">Side A — YOUR BET</span>
+          <span id="hdrB">Side B — opposite</span>
+          <span></span>
         </div>
         <div id="sharp-rows"></div>
         <button class="add-link" onclick="addSharpRow()">+ Add book</button>
@@ -461,14 +516,23 @@
         </div>
       </div>
 
-      <!-- Sharp weights -->
+      <!-- Sharp weights + Market Width + Smart Profiles -->
       <div class="card">
-        <div class="card-title">Sharp book weights (auto-normalize)</div>
-        <div class="grid3">
-          <div class="field"><label>Pinnacle</label><input type="number" id="w0" value="50" min="0" max="100" step="5"></div>
-          <div class="field"><label>Circa</label><input type="number" id="w1" value="30" min="0" max="100" step="5"></div>
-          <div class="field"><label>Prophet Exchange</label><input type="number" id="w2" value="20" min="0" max="100" step="5"></div>
+        <div class="card-title-row">
+          <span class="card-title" style="margin:0">Sharp book weights & market confidence</span>
+          <button class="btn btn-sm" onclick="autoSetProfile()" style="font-size:11px">⚡ Auto-set for this market</button>
         </div>
+
+        <!-- Sharp book profile recommendation -->
+        <div id="profileBox" style="display:none;margin-bottom:12px;padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;line-height:1.7;background:var(--green-bg);border:1px solid var(--green-mid);color:var(--green)"></div>
+
+        <div class="grid3" style="margin-bottom:12px">
+          <div class="field"><label>Pinnacle weight</label><input type="number" id="w0" value="50" min="0" max="100" step="5"></div>
+          <div class="field"><label>Circa weight</label><input type="number" id="w1" value="30" min="0" max="100" step="5"></div>
+          <div class="field"><label>Prophet Exchange weight</label><input type="number" id="w2" value="20" min="0" max="100" step="5"></div>
+        </div>
+
+        <!-- Market width moved to Bet Info card above — always visible for both main and prop -->
       </div>
 
       <button class="btn btn-primary btn-full" onclick="runChecker()">
@@ -501,6 +565,7 @@
             <div class="stat-card"><div class="stat-lbl">Implied prob</div><div class="stat-val" id="sImpl">—</div></div>
             <div class="stat-card"><div class="stat-lbl">CLV edge</div><div class="stat-val" id="sCLV">—</div></div>
           </div>
+          <div id="widthResultBox" style="display:none;margin-bottom:12px"></div>
 
           <!-- Prop signals -->
           <div id="propSignals" style="display:none;margin-bottom:14px">
@@ -855,10 +920,26 @@ function updateSportHints() {
 function buildSharpRowHTML(i, b) {
   return `<div class="sharp-row" id="sr-${i}">
     <input type="text" id="sb-${i}" value="${b.name}" placeholder="Book name">
-    <input type="number" id="sa-${i}" value="${b.a}" placeholder="-110" step="1">
-    <input type="number" id="sb2-${i}" value="${b.b}" placeholder="+100" step="1">
+    <input type="number" id="sa-${i}" value="${b.a}" placeholder="Your side odds" step="1" style="border-color:var(--green);border-width:1.5px" title="Side A — the odds for the side YOU are betting">
+    <input type="number" id="sb2-${i}" value="${b.b}" placeholder="Opposite side odds" step="1" title="Side B — the opposite side odds from the same book">
     <button class="rm-btn" onclick="removeSharpRow(${i})" title="Remove">✕</button>
   </div>`;
+}
+
+function updateSideLabels() {
+  const sideEl = document.getElementById('side');
+  if (!sideEl) return;
+  const isA = sideEl.value === 'a';
+  const aLabel = isA ? 'Over / Home / Favorite' : 'Under / Away / Dog';
+  const bLabel = isA ? 'Under / Away / Dog' : 'Over / Home / Favorite';
+  const elA = document.getElementById('sideALabel');
+  const elB = document.getElementById('sideBLabel');
+  const hdrA = document.getElementById('hdrA');
+  const hdrB = document.getElementById('hdrB');
+  if (elA) elA.textContent = aLabel;
+  if (elB) elB.textContent = bLabel;
+  if (hdrA) hdrA.textContent = 'Side A — ' + aLabel.split('/')[0].trim() + ' (YOUR BET)';
+  if (hdrB) hdrB.textContent = 'Side B — ' + bLabel.split('/')[0].trim() + ' (opposite)';
 }
 
 function renderSharpRows() {
@@ -1024,7 +1105,107 @@ function renderSignalBars(signals, propLine) {
   }).join('');
 }
 
-/* ===== MAIN CHECKER ===== */
+/* ===== SHARP BOOK PROFILES by sport/market ===== */
+const SHARP_PROFILES = {
+  nfl: {
+    spread:   { rec: ['Pinnacle','Circa'], weights: [45,40,15], note: 'Circa is co-equal with Pinnacle on NFL spreads — one of the sharpest NFL markets in the world.' },
+    total:    { rec: ['Pinnacle','Circa'], weights: [45,40,15], note: 'Same as spreads — Circa is the gold standard for NFL totals.' },
+    moneyline:{ rec: ['Pinnacle','Circa'], weights: [50,30,20], note: 'Pinnacle leads on NFL moneylines. Circa strong second.' },
+    prop:     { rec: ['Pinnacle','DraftKings','FanDuel'], weights: [60,20,20], note: 'NFL props: Pinnacle where available, DraftKings and FanDuel are sharpest for props in the US market.' }
+  },
+  nba: {
+    spread:   { rec: ['Pinnacle','Prophet Exchange'], weights: [55,25,20], note: 'Pinnacle is king on NBA spreads. Prophet Exchange exchange odds are near-true.' },
+    total:    { rec: ['Pinnacle','Prophet Exchange'], weights: [55,25,20], note: 'Pinnacle dominates NBA totals. Prophet Exchange as second.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [60,25,15], note: 'Pinnacle is far ahead of others on NBA moneylines.' },
+    prop:     { rec: ['FanDuel','DraftKings'], weights: [30,40,30], note: 'NBA props: FanDuel is one of the sharpest prop books. Pinnacle has limited NBA prop coverage — use DraftKings/FanDuel as reference.' }
+  },
+  mlb: {
+    spread:   { rec: ['Pinnacle'], weights: [60,20,20], note: 'Pinnacle leads MLB run lines. Circa has good coverage too.' },
+    total:    { rec: ['Pinnacle'], weights: [60,20,20], note: 'Pinnacle is the primary sharp reference for MLB totals.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [65,20,15], note: 'Pinnacle is by far the sharpest MLB moneyline book.' },
+    prop:     { rec: ['DraftKings','FanDuel'], weights: [25,40,35], note: 'MLB props: Pinnacle coverage is thin. DraftKings and FanDuel are the sharpest MLB prop references.' }
+  },
+  nhl: {
+    spread:   { rec: ['Pinnacle'], weights: [60,20,20], note: 'Pinnacle dominates NHL puck lines.' },
+    total:    { rec: ['Pinnacle'], weights: [60,20,20], note: 'Pinnacle is primary for NHL totals.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [65,20,15], note: 'Pinnacle is the sharpest NHL moneyline reference.' },
+    prop:     { rec: ['DraftKings','FanDuel'], weights: [25,40,35], note: 'NHL props: Use DraftKings/FanDuel — Pinnacle coverage very limited.' }
+  },
+  ncaaf: {
+    spread:   { rec: ['Pinnacle','Circa'], weights: [45,40,15], note: 'NCAAF: Circa rivals Pinnacle on college football spreads. Both essential.' },
+    total:    { rec: ['Pinnacle','Circa'], weights: [45,40,15], note: 'Same as spreads — Circa is excellent on NCAAF totals.' },
+    moneyline:{ rec: ['Pinnacle','Circa'], weights: [50,35,15], note: 'Both Pinnacle and Circa sharp on NCAAF moneylines.' },
+    prop:     { rec: ['DraftKings'], weights: [30,30,40], note: 'NCAAF props: Limited sharp coverage. DraftKings is best available reference.' }
+  },
+  ncaab: {
+    spread:   { rec: ['Pinnacle'], weights: [60,20,20], note: 'Pinnacle leads NCAAB. Market is thinner than NBA — treat with more caution.' },
+    total:    { rec: ['Pinnacle'], weights: [60,20,20], note: 'Pinnacle primary for NCAAB totals. Lower liquidity than pro leagues.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [65,20,15], note: 'Pinnacle is the sharpest NCAAB moneyline reference.' },
+    prop:     { rec: ['DraftKings'], weights: [30,30,40], note: 'NCAAB props very limited. DraftKings best available.' }
+  },
+  soccer: {
+    spread:   { rec: ['Pinnacle'], weights: [70,15,15], note: 'Soccer / MLS: Pinnacle is the world\'s sharpest soccer book by a wide margin.' },
+    total:    { rec: ['Pinnacle'], weights: [70,15,15], note: 'Pinnacle dominates soccer totals globally.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [70,15,15], note: 'Pinnacle is the gold standard for soccer moneylines worldwide.' },
+    prop:     { rec: ['Pinnacle'], weights: [60,20,20], note: 'Soccer player props: Pinnacle has reasonable coverage and is sharpest available.' }
+  },
+  other: {
+    spread:   { rec: ['Pinnacle'], weights: [55,25,20], note: 'Unknown sport: default to Pinnacle as primary reference.' },
+    total:    { rec: ['Pinnacle'], weights: [55,25,20], note: 'Unknown sport: default to Pinnacle.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [55,25,20], note: 'Unknown sport: default to Pinnacle.' },
+    prop:     { rec: ['Pinnacle','DraftKings'], weights: [40,35,25], note: 'Unknown prop: use both Pinnacle and DraftKings where available.' }
+  }
+};
+
+function getMarketCategory() {
+  const mode = currentMode;
+  if (mode === 'prop') return 'prop';
+  const mkt = (document.getElementById('mkt').value || '').toLowerCase();
+  if (mkt.includes('total') || mkt.includes('over') || mkt.includes('under')) return 'total';
+  if (mkt.includes('spread') || mkt.includes('+') || mkt.match(/[+-]\d+\.?\d*\s/)) return 'spread';
+  if (mkt.includes('moneyline') || mkt.includes('ml') || mkt.includes('win')) return 'moneyline';
+  return 'spread'; // default
+}
+
+function autoSetProfile() {
+  const sport = document.getElementById('sport').value;
+  const mktCat = getMarketCategory();
+  const profile = (SHARP_PROFILES[sport] || SHARP_PROFILES.other)[mktCat] || SHARP_PROFILES.other.spread;
+
+  document.getElementById('w0').value = profile.weights[0];
+  document.getElementById('w1').value = profile.weights[1];
+  document.getElementById('w2').value = profile.weights[2];
+
+  const box = document.getElementById('profileBox');
+  box.style.display = 'block';
+  box.innerHTML = `<strong>⚡ ${(document.getElementById('sport').options[document.getElementById('sport').selectedIndex].text)} ${mktCat} profile applied</strong><br>
+  Recommended sharp references: <strong>${profile.rec.join(' · ')}</strong><br>
+  ${profile.note}`;
+}
+
+/* ===== MARKET WIDTH CONFIDENCE ===== */
+function getWidthInfo(w) {
+  if (!w || isNaN(w)) return null;
+  if (w <= 15) return { label: 'Very tight — maximum confidence', color: 'var(--green)', penalty: 0, grade: 'A' };
+  if (w <= 20) return { label: 'Tight — high confidence', color: 'var(--green)', penalty: 0, grade: 'A-' };
+  if (w <= 25) return { label: 'Moderate — good confidence', color: 'var(--amber)', penalty: 0.05, grade: 'B' };
+  if (w <= 30) return { label: 'Wide — reduced confidence', color: 'var(--amber)', penalty: 0.12, grade: 'C' };
+  if (w <= 40) return { label: 'Very wide — low confidence', color: 'var(--red)', penalty: 0.20, grade: 'D' };
+  return { label: 'Extremely wide — avoid', color: 'var(--red)', penalty: 0.30, grade: 'F' };
+}
+
+function updateWidthDisplay() {
+  const w = parseFloat(document.getElementById('marketWidth').value);
+  const info = getWidthInfo(w);
+  const disp = document.getElementById('widthDisplay');
+  if (!info || isNaN(w)) {
+    disp.textContent = 'Enter width to see rating';
+    disp.style.color = 'var(--text2)';
+    return;
+  }
+  disp.innerHTML = `<span style="font-weight:700;color:${info.color}">${info.grade}</span>&nbsp; ${info.label}${info.penalty > 0 ? ' <span style="color:var(--text3);font-size:11px">(-' + (info.penalty*100).toFixed(0) + '% EV adj)</span>' : ' <span style="color:var(--green);font-size:11px">✓ full EV</span>'}`;
+  disp.style.color = info.color;
+}
 function runChecker() {
   syncSharp();
 
@@ -1036,13 +1217,15 @@ function runChecker() {
   const wSum = ws.reduce((a, b) => a + b, 0);
   const weights = ws.map(w => w / wSum);
 
-  const side = document.getElementById('side').value.includes('Over') || document.getElementById('side').value.includes('Home') ? 'a' : 'b';
+  const sideKey = document.getElementById('side').value === 'a' ? 'a' : 'b';
   const targetOdds = parseFloat(document.getElementById('tline').value);
   const bankroll = parseFloat(document.getElementById('bankroll').value) || 1000;
   const market = document.getElementById('mkt').value.trim() || 'Unnamed market';
   const tbook = document.getElementById('tbook').value;
   const sport = document.getElementById('sport').value;
   const modelW = currentMode === 'prop' ? Math.min(0.6, Math.max(0, (parseFloat(document.getElementById('modelWeight').value) || 30) / 100)) : 0;
+  const marketWidthRaw = parseFloat(document.getElementById('marketWidth').value);
+  const widthInfo = getWidthInfo(marketWidthRaw);
 
   if (isNaN(targetOdds)) { alert('Enter a target line in American odds (e.g. -110 or +120).'); return; }
 
@@ -1054,7 +1237,7 @@ function runChecker() {
     if (!b.a || !b.b) return;
     const nv = noVig(b.a, b.b);
     if (!nv) return;
-    const p = side === 'a' ? nv.a : nv.b;
+    const p = sideKey === 'a' ? nv.a : nv.b;
     sharpProb += p * w;
     usedW += w;
     breakdown.push(`${b.name || 'Book ' + (i+1)}: ${probToAm(p)} (${(p*100).toFixed(1)}%)`);
@@ -1062,6 +1245,21 @@ function runChecker() {
 
   if (usedW === 0) { alert('Enter at least one sharp book with both sides filled in.'); return; }
   sharpProb /= usedW;
+
+  /* Single book confidence penalty */
+  const sharpBookCount = sharpBooks.filter(b => b.a && b.b).length;
+  const singleBook = sharpBookCount < 2;
+  if (singleBook) {
+    sharpProb = sharpProb * 0.65 + 0.5 * 0.35;
+  }
+
+  /* Market width penalty — shrink edge toward implied prob */
+  let widthPenalty = 0;
+  if (widthInfo && widthInfo.penalty > 0) {
+    widthPenalty = widthInfo.penalty;
+    const impliedNow = amToProb(targetOdds);
+    sharpProb = sharpProb * (1 - widthPenalty) + impliedNow * widthPenalty;
+  }
 
   let compositeProb = sharpProb;
   let modelResult = null;
@@ -1083,10 +1281,10 @@ function runChecker() {
   let modelSharpDiff = 0;
   if (modelResult) modelSharpDiff = Math.abs(modelResult.prob - sharpProb);
 
-  const strongBet = evPct >= 3 && (!modelResult || modelSharpDiff < 0.06);
+  const strongBet = evPct >= 3 && (!modelResult || modelSharpDiff < 0.06) && !singleBook;
   let verdict, pillClass, pillText;
   if (strongBet) { verdict = 'STRONG BET'; pillClass = 'v-strong'; pillText = 'STRONG BET'; }
-  else if (evPct >= 2) { verdict = 'BET'; pillClass = 'v-bet'; pillText = 'BET'; }
+  else if (evPct >= 2 && !singleBook) { verdict = 'BET'; pillClass = 'v-bet'; pillText = 'BET'; }
   else if (evPct >= 0.5) { verdict = 'EDGE'; pillClass = 'v-edge'; pillText = 'EDGE'; }
   else if (evPct >= 0) { verdict = 'MARGINAL'; pillClass = 'v-marginal'; pillText = 'MARGINAL'; }
   else { verdict = 'SKIP'; pillClass = 'v-skip'; pillText = 'SKIP'; }
@@ -1110,6 +1308,16 @@ function runChecker() {
   document.getElementById('sProb').textContent = (compositeProb * 100).toFixed(1) + '%';
   document.getElementById('sImpl').textContent = (impliedProb * 100).toFixed(1) + '%';
   document.getElementById('sportNote').textContent = SPORT_NAMES[sport] + (currentMode === 'prop' && modelResult ? ` · ${(modelResult.stdDevPct*100).toFixed(0)}% variance profile · model weight ${(modelW*100).toFixed(0)}%` : '');
+
+  /* Width result box */
+  const widthResultBox = document.getElementById('widthResultBox');
+  if (widthInfo && !isNaN(marketWidthRaw)) {
+    widthResultBox.style.display = 'block';
+    widthResultBox.className = `alert ${widthInfo.grade <= 'B' ? 'alert-info' : widthInfo.grade <= 'C' ? 'alert-warn' : 'alert-danger'}`;
+    widthResultBox.innerHTML = `Market width ${marketWidthRaw}: <strong>${widthInfo.label}</strong>${widthPenalty > 0 ? ` — EV adjusted down by ${(widthPenalty*100).toFixed(0)}% to account for market uncertainty.` : ' — full EV applied.'}`;
+  } else {
+    widthResultBox.style.display = 'none';
+  }
 
   const edgePct = clvEdge * 100;
   const barPct = Math.min(100, Math.max(0, (edgePct + 10) / 20 * 100));
@@ -1161,11 +1369,15 @@ function runChecker() {
   /* Warnings */
   const warnBox = document.getElementById('warnBox');
   warnBox.innerHTML = '';
-  if (sharpBooks.filter(b => b.a && b.b).length < 2) warns.push('Only one sharp book entered. Add Circa or Prophet for a stronger consensus.');
+  if (singleBook) {
+    warns.push('⚠ Only 1 sharp book entered. EV has been adjusted down and verdict capped at EDGE. Add Circa or Prophet Exchange for a real BET signal — single-book lines can produce inflated EV that isn\'t real.');
+  }
+  if (widthInfo && widthInfo.grade === 'D') warns.push('⚠ Market width is very wide (30+). Sharp book is uncertain — this line should be treated with caution even at positive EV.');
+  if (widthInfo && widthInfo.grade === 'F') warns.push('🚫 Market width is extremely wide (40+). Avoid this bet — the fair line is too uncertain to trust.');
   if (Math.abs(evPct) < 0.5) warns.push('Edge is very thin (<0.5%). The line may have already moved.');
   if (warns.length) {
     warnBox.className = 'alert alert-warn';
-    warnBox.textContent = warns.join(' · ');
+    warnBox.innerHTML = warns.join('<br>');
   }
 
   document.getElementById('result').style.display = 'block';
@@ -1385,6 +1597,7 @@ function exportCSV() {
 /* ===== INIT ===== */
 renderSharpRows();
 setMode('main');
+updateSideLabels();
 </script>
 </body>
 </html>
