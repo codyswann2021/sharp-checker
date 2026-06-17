@@ -505,8 +505,13 @@
 
         <div style="margin-top:14px" class="grid2">
           <div class="field">
-            <label>Bankroll ($)</label>
-            <input type="number" id="bankroll" value="1000" min="1" step="50">
+            <label>Bankroll ($) <span style="font-size:10px;color:var(--text3)">your total betting bankroll</span></label>
+            <input type="number" id="bankroll" value="100" min="1" step="10">
+          </div>
+          <div class="field">
+            <label>Max bet (1 unit) <span style="font-size:10px;color:var(--text3)">hard cap per bet</span></label>
+            <input type="number" id="maxUnit" value="10" min="1" step="1">
+            <div class="hint">Kelly will never suggest more than this regardless of EV</div>
           </div>
           <div class="field" id="model-weight-wrap" style="display:none">
             <label>Model weight: <strong id="mw-display">30%</strong></label>
@@ -584,10 +589,44 @@
           <div class="bar-labels"><span>−10%</span><span>0</span><span>+10%</span></div>
 
           <div class="divider"></div>
-          <div class="card-title" style="margin-bottom:8px">Kelly criterion bet sizing</div>
-          <div class="kv-row"><span class="kv-lbl">Full Kelly</span><span class="kv-val" id="kFull">—</span></div>
-          <div class="kv-row"><span class="kv-lbl">Half Kelly <span style="font-size:11px;color:var(--text3)">(aggressive)</span></span><span class="kv-val" id="kHalf">—</span></div>
-          <div class="kv-row"><span class="kv-lbl">Quarter Kelly <span style="font-size:11px;color:var(--text3)">(recommended)</span></span><span class="kv-val" id="kQtr" style="color:var(--green)">—</span></div>
+          <div class="card-title" style="margin-bottom:8px">Bet sizing</div>
+
+          <!-- OddsJam size + confidence adjustment -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div class="field">
+              <label style="font-size:11px">OddsJam rec. size ($)</label>
+              <input type="number" id="ojSize" placeholder="e.g. 25" min="0" step="1" style="font-size:14px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface2);color:var(--text);width:100%">
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Enter what OddsJam suggests</div>
+            </div>
+            <div class="field">
+              <label style="font-size:11px">Flat bet mode</label>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                <input type="checkbox" id="flatMode" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+                <label for="flatMode" style="font-size:13px;color:var(--text2);cursor:pointer">$<input type="number" id="flatAmt" value="5" min="1" step="1" style="width:50px;font-size:13px;padding:2px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);margin:0 3px"> flat per bet</label>
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Use until 200 bets logged</div>
+            </div>
+          </div>
+
+          <!-- Recommended stake box -->
+          <div id="recStakeBox" style="background:var(--green-bg);border:1.5px solid var(--green-mid);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.05em">Recommended stake</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:1px" id="recStakeNote">—</div>
+              </div>
+              <div style="font-size:26px;font-weight:800;color:var(--green)" id="recStake">—</div>
+            </div>
+            <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
+              <div style="font-size:11px;color:var(--text3)">Confidence grade:</div>
+              <div style="font-size:13px;font-weight:700" id="confGrade">—</div>
+              <div style="font-size:11px;color:var(--text3)" id="confAdj">—</div>
+            </div>
+          </div>
+
+          <div class="kv-row"><span class="kv-lbl">Full Kelly (uncapped)</span><span class="kv-val" id="kFull">—</span></div>
+          <div class="kv-row"><span class="kv-lbl">Quarter Kelly (uncapped)</span><span class="kv-val" id="kQtr">—</span></div>
+          <div class="kv-row"><span class="kv-lbl">Max unit cap</span><span class="kv-val" id="maxUnitDisplay">$10</span></div>
 
           <div class="divider"></div>
           <div class="card-title" style="margin-bottom:6px">Full breakdown</div>
@@ -600,20 +639,41 @@
     <!-- ===== LOG PAGE ===== -->
     <div id="page-log" class="page">
       <div class="page-title">Bet Log</div>
-      <div class="page-sub">All bets you've checked. Persists between sessions in this browser.</div>
+      <div class="page-sub">Syncs across all your devices in real time.</div>
+
+      <!-- Sync status bar -->
+      <div id="syncBar" style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border);margin-bottom:14px;font-size:12px">
+        <div id="syncDot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
+        <span id="syncStatus" style="color:var(--text2)">Connecting...</span>
+        <button class="btn btn-sm" style="margin-left:auto;font-size:11px" onclick="syncLog()">↻ Sync now</button>
+      </div>
+
       <div class="card">
         <div class="card-title-row">
-          <span class="card-title" style="margin:0">History (<span id="logCount">0</span> bets)</span>
+          <span class="card-title" style="margin:0">History (<span id="logCount">0</span> bets · <span id="placedCount">0</span> placed)</span>
           <div style="display:flex;gap:8px">
             <button class="btn btn-sm btn-green" onclick="exportCSV()">Export CSV</button>
             <button class="btn btn-sm btn-danger" onclick="clearLog()">Clear all</button>
           </div>
         </div>
+
+        <!-- Progress toward 200 bet threshold -->
+        <div id="progressWrap" style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px">
+            <span>Proving ground progress</span>
+            <span id="progressLabel">0 / 200 bets placed</span>
+          </div>
+          <div style="background:var(--surface2);border-radius:99px;height:6px;overflow:hidden">
+            <div id="progressBar" style="height:100%;border-radius:99px;background:var(--blue);transition:width .4s ease;width:0%"></div>
+          </div>
+          <div id="progressNote" style="font-size:11px;color:var(--text3);margin-top:4px">Track 200 placed bets before sizing up. Flat bet mode recommended until then.</div>
+        </div>
+
         <div id="logSummary" style="display:none;margin-bottom:12px">
           <div class="grid4" style="margin-bottom:10px">
-            <div class="stat-card"><div class="stat-lbl">Total checked</div><div class="stat-val" id="ls-total">0</div></div>
-            <div class="stat-card"><div class="stat-lbl">Placed</div><div class="stat-val positive" id="ls-bets">0</div></div>
-            <div class="stat-card"><div class="stat-lbl">Avg EV%</div><div class="stat-val" id="ls-avgev">—</div></div>
+            <div class="stat-card"><div class="stat-lbl">Checked</div><div class="stat-val" id="ls-total">0</div></div>
+            <div class="stat-card"><div class="stat-lbl">W / L</div><div class="stat-val" id="ls-bets">—</div></div>
+            <div class="stat-card"><div class="stat-lbl">Avg EV% (placed)</div><div class="stat-val" id="ls-avgev">—</div></div>
             <div class="stat-card"><div class="stat-lbl">ROI</div><div class="stat-val" id="ls-avgkelly">—</div></div>
           </div>
           <div class="grid4" id="ls-extra"></div>
@@ -1290,10 +1350,60 @@ function runChecker() {
   else { verdict = 'SKIP'; pillClass = 'v-skip'; pillText = 'SKIP'; }
 
   const kFull = kellyBet(compositeProb, targetOdds, bankroll);
-  const kHalf = kFull / 2;
   const kQtr = kFull / 4;
+  const maxUnit = parseFloat(document.getElementById('maxUnit').value) || 10;
   const fmt = v => '$' + v.toFixed(2);
   const tLineStr = targetOdds > 0 ? '+' + targetOdds : String(targetOdds);
+
+  /* Confidence grade — combines all factors */
+  let confScore = 100;
+  if (singleBook) confScore -= 35;
+  if (widthInfo) {
+    if (widthInfo.grade === 'B') confScore -= 10;
+    else if (widthInfo.grade === 'C') confScore -= 20;
+    else if (widthInfo.grade === 'D') confScore -= 35;
+    else if (widthInfo.grade === 'F') confScore -= 50;
+  }
+  if (modelResult && modelSharpDiff >= 0.08) confScore -= 15;
+  else if (modelResult && modelSharpDiff >= 0.03) confScore -= 5;
+  confScore = Math.max(0, Math.min(100, confScore));
+
+  let confGrade, confLabel, confMult, confColor;
+  if (confScore >= 85) { confGrade = 'A'; confLabel = 'High confidence'; confMult = 1.0; confColor = 'var(--green)'; }
+  else if (confScore >= 70) { confGrade = 'B'; confLabel = 'Good confidence'; confMult = 0.75; confColor = 'var(--green)'; }
+  else if (confScore >= 50) { confGrade = 'C'; confLabel = 'Moderate confidence'; confMult = 0.5; confColor = 'var(--amber)'; }
+  else if (confScore >= 30) { confGrade = 'D'; confLabel = 'Low confidence'; confMult = 0.25; confColor = 'var(--red)'; }
+  else { confGrade = 'F'; confLabel = 'Very low — consider skipping'; confMult = 0; confColor = 'var(--red)'; }
+
+  /* Recommended stake calculation */
+  const flatMode = document.getElementById('flatMode').checked;
+  const flatAmt = parseFloat(document.getElementById('flatAmt').value) || 5;
+  const ojSize = parseFloat(document.getElementById('ojSize').value);
+
+  let recStake, recNote;
+  if (flatMode) {
+    recStake = flatAmt;
+    recNote = `Flat bet mode — $${flatAmt} regardless of EV`;
+  } else if (!isNaN(ojSize) && ojSize > 0) {
+    const adjusted = Math.min(ojSize * confMult, maxUnit);
+    recStake = adjusted;
+    recNote = `OddsJam $${ojSize} × ${(confMult*100).toFixed(0)}% confidence (${confGrade}) = $${(ojSize*confMult).toFixed(2)}${ojSize*confMult > maxUnit ? ` → capped at $${maxUnit} max unit` : ''}`;
+  } else {
+    recStake = Math.min(kQtr, maxUnit);
+    recNote = kQtr > maxUnit ? `Quarter Kelly $${kQtr.toFixed(2)} → capped at $${maxUnit} max unit` : `Quarter Kelly sizing`;
+  }
+
+  /* Update sizing DOM */
+  const recEl = document.getElementById('recStake');
+  recEl.textContent = recStake > 0 ? fmt(recStake) : 'SKIP';
+  recEl.style.color = recStake > 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('recStakeNote').textContent = recNote || '—';
+  document.getElementById('confGrade').textContent = confGrade + ' — ' + confLabel;
+  document.getElementById('confGrade').style.color = confColor;
+  document.getElementById('confAdj').textContent = confMult < 1 ? `(size × ${(confMult*100).toFixed(0)}%)` : '(full size)';
+  document.getElementById('maxUnitDisplay').textContent = fmt(maxUnit);
+  document.getElementById('kFull').textContent = kFull > 0 ? fmt(kFull) : '—';
+  document.getElementById('kQtr').textContent = kQtr > 0 ? fmt(kQtr) : '—';
 
   /* Update DOM */
   document.getElementById('vPill').className = 'verdict-pill ' + pillClass;
@@ -1324,10 +1434,6 @@ function runChecker() {
   const bar = document.getElementById('edgeBar');
   bar.style.width = barPct.toFixed(1) + '%';
   bar.className = 'bar-fill ' + (edgePct > 0.2 ? 'bar-pos' : edgePct < -0.2 ? 'bar-neg' : 'bar-zero');
-
-  document.getElementById('kFull').textContent = kFull > 0 ? fmt(kFull) : '—';
-  document.getElementById('kHalf').textContent = kHalf > 0 ? fmt(kHalf) : '—';
-  document.getElementById('kQtr').textContent = kQtr > 0 ? fmt(kQtr) : '—';
 
   let bkStr = breakdown.join(' · ');
   if (modelResult) bkStr += `. Model avg: ${modelResult.modelAvg.toFixed(1)} vs line ${document.getElementById('propLine').value || '—'} (${modelResult.sport} ${modelResult.propType})`;
@@ -1394,47 +1500,113 @@ function runChecker() {
     sharpProb: parseFloat((sharpProb*100).toFixed(2)),
     modelProb: modelResult ? parseFloat((modelResult.prob*100).toFixed(1)) : null,
     clvEdge: parseFloat((clvEdge*100).toFixed(2)),
-    halfKelly: kHalf > 0 ? parseFloat(kHalf.toFixed(2)) : 0,
+    halfKelly: (kFull/2) > 0 ? parseFloat((kFull/2).toFixed(2)) : 0,
     qtrKelly: kQtr > 0 ? parseFloat(kQtr.toFixed(2)) : 0,
+    recStake: recStake > 0 ? parseFloat(recStake.toFixed(2)) : 0,
+    maxUnit: parseFloat(maxUnit.toFixed(2)),
+    confGrade,
+    confScore,
     bankroll,
     mode: currentMode,
     sport
   };
   betLog.unshift(entry);
-  if (betLog.length > 200) betLog = betLog.slice(0, 200);
-  localStorage.setItem('sharpBetLog', JSON.stringify(betLog));
+  if (betLog.length > 500) betLog = betLog.slice(0, 500);
+  await saveLog();
 }
 
-/* ===== LOG ===== */
-function togglePlaced(id) {
+/* ===== CLOUD SYNC LOG ===== */
+const LOG_KEY = 'sharpBetLog_v2';
+
+async function saveLog() {
+  try {
+    await window.storage.set(LOG_KEY, JSON.stringify(betLog), true);
+    setSyncStatus('synced');
+  } catch(e) {
+    localStorage.setItem(LOG_KEY, JSON.stringify(betLog));
+    setSyncStatus('local');
+  }
+}
+
+async function loadLog() {
+  setSyncStatus('loading');
+  try {
+    const res = await window.storage.get(LOG_KEY, true);
+    if (res && res.value) {
+      const cloud = JSON.parse(res.value);
+      const local = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      const merged = mergeLogArrays(cloud, local);
+      betLog = merged;
+      await window.storage.set(LOG_KEY, JSON.stringify(betLog), true);
+      setSyncStatus('synced');
+    } else {
+      const local = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      if (local.length) {
+        betLog = local;
+        await window.storage.set(LOG_KEY, JSON.stringify(betLog), true);
+      }
+      setSyncStatus('synced');
+    }
+  } catch(e) {
+    const local = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    betLog = local.length ? local : betLog;
+    setSyncStatus('local');
+  }
+  renderLog();
+}
+
+async function syncLog() {
+  await loadLog();
+  renderLog();
+}
+
+function mergeLogArrays(a, b) {
+  const map = new Map();
+  [...a, ...b].forEach(entry => {
+    if (!map.has(entry.id) || entry.placed || entry.result) map.set(entry.id, entry);
+  });
+  return Array.from(map.values()).sort((x,y) => y.id - x.id).slice(0,500);
+}
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncStatus');
+  if (!dot || !txt) return;
+  if (state === 'synced') { dot.style.background = '#4caf50'; txt.textContent = 'Synced — bets available on all devices'; }
+  else if (state === 'loading') { dot.style.background = '#f5c542'; txt.textContent = 'Syncing...'; }
+  else if (state === 'local') { dot.style.background = '#f5c542'; txt.textContent = 'Local only (storage unavailable — export CSV to back up)'; }
+}
+
+/* ===== LOG ACTIONS ===== */
+async function togglePlaced(id) {
   const b = betLog.find(x => x.id === id);
   if (!b) return;
   b.placed = !b.placed;
   if (!b.placed) { b.result = null; b.staked = null; }
-  localStorage.setItem('sharpBetLog', JSON.stringify(betLog));
+  await saveLog();
   renderLog();
 }
 
-function setResult(id, result) {
+async function setResult(id, result) {
   const b = betLog.find(x => x.id === id);
   if (!b) return;
   b.result = b.result === result ? null : result;
-  localStorage.setItem('sharpBetLog', JSON.stringify(betLog));
+  await saveLog();
   renderLog();
 }
 
-function setStaked(id, val) {
+async function setStaked(id, val) {
   const b = betLog.find(x => x.id === id);
   if (!b) return;
   const n = parseFloat(val);
   b.staked = isNaN(n) ? null : parseFloat(n.toFixed(2));
-  localStorage.setItem('sharpBetLog', JSON.stringify(betLog));
+  await saveLog();
   renderLog();
 }
 
-function deleteEntry(id) {
+async function deleteEntry(id) {
   betLog = betLog.filter(x => x.id !== id);
-  localStorage.setItem('sharpBetLog', JSON.stringify(betLog));
+  await saveLog();
   renderLog();
 }
 
@@ -1452,7 +1624,28 @@ function calcPL(b) {
 
 function renderLog() {
   const c = document.getElementById('logContent');
+  const placed = betLog.filter(b => b.placed);
+  const settled = placed.filter(b => b.result && b.staked);
+
   document.getElementById('logCount').textContent = betLog.length;
+  document.getElementById('placedCount').textContent = placed.length;
+
+  /* Progress toward 200 */
+  const pct = Math.min(100, (placed.length / 200) * 100);
+  const pb = document.getElementById('progressBar');
+  const pl2 = document.getElementById('progressLabel');
+  const pn = document.getElementById('progressNote');
+  if (pb) pb.style.width = pct.toFixed(1) + '%';
+  if (pl2) pl2.textContent = placed.length + ' / 200 bets placed';
+  if (pn) {
+    if (placed.length >= 200) {
+      pn.textContent = '✓ 200 bets reached — your process is statistically proven. Consider sizing up.';
+      pn.style.color = 'var(--green)';
+      if (pb) pb.style.background = 'var(--green)';
+    } else {
+      pn.textContent = `${200 - placed.length} more bets until your edge is statistically proven. Stay flat until then.`;
+    }
+  }
 
   if (!betLog.length) {
     c.innerHTML = '<p style="font-size:13px;color:var(--text3);padding:8px 0">No bets logged yet. Run the checker to get started.</p>';
@@ -1462,8 +1655,6 @@ function renderLog() {
 
   document.getElementById('logSummary').style.display = 'block';
 
-  const placed = betLog.filter(b => b.placed);
-  const settled = placed.filter(b => b.result && b.staked);
   const wins = settled.filter(b => b.result === 'W').length;
   const losses = settled.filter(b => b.result === 'L').length;
   const pushes = settled.filter(b => b.result === 'P').length;
@@ -1471,28 +1662,30 @@ function renderLog() {
   const totalStaked = settled.reduce((sum, b) => sum + (b.staked || 0), 0);
   const roi = totalStaked > 0 ? (totalPL / totalStaked) * 100 : null;
   const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) * 100 : null;
-
-  /* Avg EV only counts placed bets */
   const avgEV = placed.length > 0
     ? placed.reduce((a, b) => a + b.evPct, 0) / placed.length
     : betLog.reduce((a, b) => a + b.evPct, 0) / betLog.length;
+  const avgCLV = placed.length > 0
+    ? placed.reduce((a, b) => a + (b.clvEdge || 0), 0) / placed.length : null;
 
-  document.getElementById('ls-total').textContent = betLog.length + ' checked / ' + placed.length + ' placed';
+  document.getElementById('ls-total').textContent = betLog.length;
   document.getElementById('ls-bets').textContent = settled.length ? wins + 'W - ' + losses + 'L' + (pushes ? ' - ' + pushes + 'P' : '') : '—';
-  document.getElementById('ls-avgev').textContent = placed.length ? (avgEV >= 0 ? '+' : '') + avgEV.toFixed(2) + '% (placed)' : '—';
-  document.getElementById('ls-avgkelly').textContent = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '% ROI' : '—';
+  document.getElementById('ls-avgev').textContent = placed.length ? (avgEV >= 0 ? '+' : '') + avgEV.toFixed(2) + '%' : '—';
+  document.getElementById('ls-avgkelly').textContent = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : '—';
 
   const plColor = totalPL >= 0 ? 'var(--green)' : 'var(--red)';
   const plStr = settled.length ? (totalPL >= 0 ? '+' : '') + '$' + totalPL.toFixed(2) : '—';
   const wrStr = winRate !== null ? winRate.toFixed(1) + '%' : '—';
+  const clvStr = avgCLV !== null ? (avgCLV >= 0 ? '+' : '') + avgCLV.toFixed(2) + '%' : '—';
+  const clvColor = avgCLV >= 0 ? 'var(--green)' : 'var(--red)';
 
   const summaryExtra = document.getElementById('ls-extra');
   if (summaryExtra) {
     summaryExtra.innerHTML = `
       <div class="stat-card"><div class="stat-lbl">Win rate</div><div class="stat-val">${wrStr}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Avg CLV</div><div class="stat-val" style="color:${clvColor}">${clvStr}</div></div>
       <div class="stat-card"><div class="stat-lbl">Total P&L</div><div class="stat-val" style="color:${plColor}">${plStr}</div></div>
       <div class="stat-card"><div class="stat-lbl">Total staked</div><div class="stat-val">${totalStaked > 0 ? '$' + totalStaked.toFixed(2) : '—'}</div></div>
-      <div class="stat-card"><div class="stat-lbl">Bets settled</div><div class="stat-val">${settled.length}</div></div>
     `;
   }
 
@@ -1500,18 +1693,19 @@ function renderLog() {
   <table class="log-table" style="min-width:960px">
     <thead><tr>
       <th style="width:10%">Date/Time</th>
-      <th style="width:17%">Market</th>
+      <th style="width:16%">Market</th>
       <th style="width:5%">Type</th>
-      <th style="width:7%">Book</th>
+      <th style="width:6%">Book</th>
       <th style="width:8%">Verdict</th>
       <th style="width:5%">EV%</th>
       <th style="width:5%">CLV</th>
-      <th style="width:7%">¼ Kelly</th>
+      <th style="width:5%">Conf</th>
+      <th style="width:7%">Rec $</th>
       <th style="width:7%">Placed</th>
       <th style="width:7%">Staked</th>
       <th style="width:9%">Result</th>
       <th style="width:7%">P&L</th>
-      <th style="width:6%">Delete</th>
+      <th style="width:3%"></th>
     </tr></thead>
     <tbody>${betLog.map(b => {
       const pl = calcPL(b);
@@ -1519,53 +1713,48 @@ function renderLog() {
       const plColor = pl !== null ? (pl > 0 ? 'var(--green)' : pl < 0 ? 'var(--red)' : 'var(--text2)') : 'var(--text3)';
       const pillMap = {'v-strong':'p-strong','v-bet':'p-bet','v-edge':'p-edge','v-marginal':'p-marginal','v-skip':'p-skip'};
       const pc = pillMap[b.pillClass] || 'p-skip';
-      const qtr = b.qtrKelly != null ? b.qtrKelly : (b.halfKelly > 0 ? (b.halfKelly / 2).toFixed(2) : null);
-      const stakeVal = b.staked != null ? b.staked : (qtr ? parseFloat(qtr).toFixed(2) : '');
+      const rec = b.recStake != null ? b.recStake : (b.qtrKelly ? Math.min(b.qtrKelly, b.maxUnit || 10) : null);
+      const stakeVal = b.staked != null ? b.staked : (rec ? parseFloat(rec).toFixed(2) : '');
+      const confColor = b.confGrade === 'A' ? 'var(--green)' : b.confGrade === 'B' ? 'var(--green)' : b.confGrade === 'C' ? 'var(--amber)' : 'var(--red)';
       const placedBtn = b.placed
-        ? `<button onclick="togglePlaced(${b.id})" style="padding:3px 10px;font-size:11px;font-weight:600;border-radius:4px;border:1px solid var(--green);background:var(--green-bg);color:var(--green);cursor:pointer;white-space:nowrap">✓ Placed</button>`
-        : `<button onclick="togglePlaced(${b.id})" style="padding:3px 10px;font-size:11px;font-weight:500;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;white-space:nowrap">Place</button>`;
-      return `<tr style="opacity:${b.placed ? '1' : '0.65'}">
-        <td style="color:var(--text3);font-size:11px">${b.ts}</td>
+        ? `<button onclick="togglePlaced(${b.id})" style="padding:3px 8px;font-size:11px;font-weight:600;border-radius:4px;border:1px solid var(--green);background:var(--green-bg);color:var(--green);cursor:pointer">✓ Placed</button>`
+        : `<button onclick="togglePlaced(${b.id})" style="padding:3px 8px;font-size:11px;font-weight:500;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer">Place</button>`;
+      return `<tr style="opacity:${b.placed ? '1' : '0.6'}">
+        <td style="color:var(--text3);font-size:10px">${b.ts}</td>
         <td title="${b.market}" style="max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${b.market}</td>
         <td><span class="tag">${b.mode === 'prop' ? 'prop' : 'main'}</span></td>
         <td><span class="tag">${b.tbook}</span></td>
         <td><span class="pill ${pc}">${b.verdict}</span></td>
         <td style="font-weight:600;color:${b.evPct >= 2 ? 'var(--green)' : b.evPct >= 0 ? 'var(--text)' : 'var(--red)'}">${b.evPct >= 0 ? '+' : ''}${b.evPct}%</td>
-        <td style="color:${b.clvEdge >= 0 ? 'var(--green)' : 'var(--red)'}">${b.clvEdge >= 0 ? '+' : ''}${b.clvEdge}%</td>
-        <td style="font-size:12px;font-weight:500;color:var(--green)">${qtr ? '$' + parseFloat(qtr).toFixed(2) : '—'}</td>
+        <td style="color:${(b.clvEdge||0) >= 0 ? 'var(--green)' : 'var(--red)'}">${(b.clvEdge||0) >= 0 ? '+' : ''}${(b.clvEdge||0).toFixed(2)}%</td>
+        <td style="font-weight:700;color:${confColor}">${b.confGrade || '—'}</td>
+        <td style="font-size:12px;font-weight:700;color:var(--green)">${rec ? '$' + parseFloat(rec).toFixed(2) : '—'}</td>
         <td>${placedBtn}</td>
-        <td>
-          ${b.placed ? `<input type="number" value="${stakeVal}" min="0" step="0.01" onchange="setStaked(${b.id}, this.value)" style="width:65px;font-size:12px;padding:3px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text)" placeholder="$">` : '<span style="color:var(--text3);font-size:12px">—</span>'}
-        </td>
-        <td>
-          ${b.placed ? `<div style="display:flex;gap:3px">
-              <button onclick="setResult(${b.id},'W')" style="padding:2px 6px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='W' ? 'var(--green)' : 'var(--border2)'};background:${b.result==='W' ? 'var(--green-bg)' : 'var(--surface2)'};color:${b.result==='W' ? 'var(--green)' : 'var(--text2)'};cursor:pointer">W</button>
-              <button onclick="setResult(${b.id},'L')" style="padding:2px 6px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='L' ? 'var(--red)' : 'var(--border2)'};background:${b.result==='L' ? 'var(--red-bg)' : 'var(--surface2)'};color:${b.result==='L' ? 'var(--red)' : 'var(--text2)'};cursor:pointer">L</button>
-              <button onclick="setResult(${b.id},'P')" style="padding:2px 6px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='P' ? 'var(--blue)' : 'var(--border2)'};background:${b.result==='P' ? 'var(--blue-bg)' : 'var(--surface2)'};color:${b.result==='P' ? 'var(--blue)' : 'var(--text2)'};cursor:pointer">P</button>
-            </div>` : '<span style="color:var(--text3);font-size:12px">—</span>'}
-        </td>
+        <td>${b.placed ? `<input type="number" value="${stakeVal}" min="0" step="0.01" onchange="setStaked(${b.id}, this.value)" style="width:60px;font-size:12px;padding:3px 5px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text)" placeholder="$">` : '<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+        <td>${b.placed ? `<div style="display:flex;gap:3px">
+            <button onclick="setResult(${b.id},'W')" style="padding:2px 5px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='W'?'var(--green)':'var(--border2)'};background:${b.result==='W'?'var(--green-bg)':'var(--surface2)'};color:${b.result==='W'?'var(--green)':'var(--text2)'};cursor:pointer">W</button>
+            <button onclick="setResult(${b.id},'L')" style="padding:2px 5px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='L'?'var(--red)':'var(--border2)'};background:${b.result==='L'?'var(--red-bg)':'var(--surface2)'};color:${b.result==='L'?'var(--red)':'var(--text2)'};cursor:pointer">L</button>
+            <button onclick="setResult(${b.id},'P')" style="padding:2px 5px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='P'?'var(--blue)':'var(--border2)'};background:${b.result==='P'?'var(--blue-bg)':'var(--surface2)'};color:${b.result==='P'?'var(--blue)':'var(--text2)'};cursor:pointer">P</button>
+          </div>` : '<span style="color:var(--text3);font-size:12px">—</span>'}</td>
         <td style="font-weight:600;color:${plColor}">${plStr}</td>
-        <td style="text-align:center">
-          <button onclick="deleteEntry(${b.id})" title="Delete this entry" style="padding:2px 7px;font-size:13px;border-radius:4px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer;line-height:1" onmouseover="this.style.color='var(--red)';this.style.borderColor='var(--red)'" onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border2)'">✕</button>
-        </td>
+        <td><button onclick="deleteEntry(${b.id})" style="padding:2px 6px;font-size:12px;border-radius:4px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">✕</button></td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
 }
 
-function clearLog() {
+async function clearLog() {
   if (!confirm('Clear all ' + betLog.length + ' logged bets? This cannot be undone.')) return;
   betLog = [];
-  localStorage.removeItem('sharpBetLog');
+  await saveLog();
   renderLog();
 }
 
 function exportCSV() {
   if (!betLog.length) { alert('No bets to export.'); return; }
-  const headers = ['Date/Time','Market','Type','Book','Line','Verdict','EV%','Fair line','CLV%','Qtr Kelly','Placed','Staked','Result','P&L','Model prob','Sport','Bankroll'];
+  const headers = ['Date/Time','Market','Type','Book','Line','Verdict','EV%','Fair line','CLV%','Conf Grade','Rec Stake','Placed','Staked','Result','P&L','Model prob','Sport','Bankroll'];
   const rows = betLog.map(b => {
     const pl = calcPL(b);
-    const qtr = b.qtrKelly != null ? b.qtrKelly : (b.halfKelly > 0 ? (b.halfKelly / 2).toFixed(2) : '');
     return [
       '"' + b.ts + '"',
       '"' + (b.market || '').replace(/"/g, '""') + '"',
@@ -1575,8 +1764,9 @@ function exportCSV() {
       b.verdict,
       b.evPct,
       b.fairAm,
-      b.clvEdge,
-      qtr,
+      b.clvEdge || 0,
+      b.confGrade || '',
+      b.recStake != null ? b.recStake : '',
       b.placed ? 'Yes' : 'No',
       b.staked != null ? b.staked : '',
       b.result || '',
@@ -1598,6 +1788,7 @@ function exportCSV() {
 renderSharpRows();
 setMode('main');
 updateSideLabels();
+loadLog();
 </script>
 </body>
 </html>
