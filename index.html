@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sharp +EV Bet Checker</title>
+<style>
+  :root {
+    /* Light mode — warm off-white, not harsh white */
+    --bg: #f0f0ed;
+    --surface: #fafaf8;
+    --surface2: #e8e8e4;
+    --border: #d4d4ce;
+    --border2: #bcbcb6;
+    --text: #1e1e1c;
+    --text2: #52524e;
+    --text3: #8a8a84;
+    --green: #1e6e2e;
+    --green-bg: #dff0e3;
+    --green-mid: #3aaa50;
+    --blue: #1a5aa0;
+    --blue-bg: #ddeaf8;
+    --amber: #6e4400;
+    --amber-bg: #faefd8;
+    --red: #922020;
+    --red-bg: #fce4e4;
+    --purple: #4e36a0;
+    --purple-bg: #ede9fa;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  [data-theme="dark"] {
+    /* Dark mode — deep slate, easy on the eyes */
+    --bg: #0f1117;
+    --surface: #181c24;
+    --surface2: #1e2330;
+    --border: #262d3d;
+    --border2: #303a50;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #546480;
+    --green: #4ade80;
+    --green-bg: #0d2318;
+    --green-mid: #22c55e;
+    --blue: #60a5fa;
+    --blue-bg: #0d1f38;
+    --amber: #fbbf24;
+    --amber-bg: #1f1508;
+    --red: #f87171;
+    --red-bg: #1f0d0d;
+    --purple: #a78bfa;
+    --purple-bg: #180f30;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  a { color: var(--blue); }
+
+  /* Layout */
+  .app-wrapper { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; min-width: 220px; background: var(--surface); border-right: 1px solid var(--border); padding: 0; display: flex; flex-direction: column; }
+  .main { flex: 1; padding: 24px 28px; max-width: 800px; }
+  .sidebar-logo { padding: 20px 18px 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-logo .logo-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .sidebar-logo .logo-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .nav-section { padding: 10px 10px 4px; font-size: 10px; font-weight: 600; letter-spacing: .07em; color: var(--text3); text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 12px; margin: 1px 6px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--text2); border: none; background: none; width: calc(100% - 12px); text-align: left; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--blue-bg); color: var(--blue); font-weight: 500; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .sidebar-bottom { margin-top: auto; padding: 12px; border-top: 1px solid var(--border); }
+  .theme-btn { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; color: var(--text2); border: 1px solid var(--border); background: var(--surface2); width: 100%; }
+  .theme-btn:hover { background: var(--border); }
+
+  /* Pages */
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.4px; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .card-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; color: var(--text3); text-transform: uppercase; margin-bottom: 12px; }
+  .card-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+
+  /* Forms */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .field .hint { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  input[type="text"], input[type="number"], select, textarea {
+    font-size: 13px; padding: 8px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2); background: var(--surface2); color: var(--text);
+    width: 100%; font-family: inherit; outline: none; transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,95,168,0.12); }
+  textarea { resize: vertical; min-height: 60px; }
+  input[type="range"] { width: 100%; accent-color: var(--blue); cursor: pointer; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); transition: all .15s; }
+  .btn:hover { background: var(--border); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn-primary:hover { opacity: 0.9; background: var(--blue); }
+  .btn-green { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-green:hover { opacity: 0.9; }
+  .btn-sm { padding: 5px 11px; font-size: 12px; }
+  .btn-full { width: 100%; justify-content: center; padding: 11px; font-size: 14px; }
+  .btn-danger { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+
+  /* Mode toggle */
+  .mode-toggle { display: inline-flex; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 14px; }
+  .mt-btn { padding: 6px 16px; font-size: 13px; border: none; background: none; border-radius: 4px; cursor: pointer; color: var(--text2); font-weight: 400; transition: all .15s; }
+  .mt-btn.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+
+  /* Sharp rows */
+  .sharp-hdr { display: grid; grid-template-columns: 1fr 1fr 1fr 28px; gap: 8px; margin-bottom: 4px; }
+  .sharp-hdr span { font-size: 11px; color: var(--text3); }
+  .sharp-row { display: grid; grid-template-columns: 1fr 1fr 1fr 28px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .rm-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; line-height: 1; padding: 4px; border-radius: 4px; }
+  .rm-btn:hover { color: var(--red); background: var(--red-bg); }
+  .add-link { font-size: 12px; color: var(--blue); cursor: pointer; background: none; border: none; padding: 0; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .add-link:hover { text-decoration: underline; }
+
+  /* Stat cards */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .stat-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .stat-lbl { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+  .stat-val { font-size: 18px; font-weight: 700; color: var(--text); }
+  .stat-val.positive { color: var(--green); }
+  .stat-val.negative { color: var(--red); }
+
+  /* Verdict */
+  .verdict-wrap { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .verdict-pill { font-size: 14px; font-weight: 700; padding: 7px 20px; border-radius: 99px; white-space: nowrap; }
+  .v-strong { background: var(--green-bg); color: var(--green); border: 1.5px solid var(--green-mid); }
+  .v-bet { background: var(--green-bg); color: var(--green); }
+  .v-edge { background: var(--blue-bg); color: var(--blue); }
+  .v-marginal { background: var(--amber-bg); color: var(--amber); }
+  .v-skip { background: var(--red-bg); color: var(--red); }
+  .ev-display { font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -1px; }
+  .ev-display sub { font-size: 14px; font-weight: 400; color: var(--text2); letter-spacing: 0; }
+
+  /* Bar */
+  .bar-track { background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
+  .bar-pos { background: var(--green-mid); }
+  .bar-neg { background: #e24b4a; }
+  .bar-zero { background: #aaa; }
+  .bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* Signal bars */
+  .signal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .signal-lbl { font-size: 12px; color: var(--text2); min-width: 120px; }
+  .signal-track { flex: 1; background: var(--surface2); border-radius: 99px; height: 5px; overflow: hidden; }
+  .signal-fill { height: 100%; border-radius: 99px; }
+  .signal-val { font-size: 12px; font-weight: 600; color: var(--text); min-width: 44px; text-align: right; }
+
+  /* Model ring */
+  .model-ring { width: 76px; height: 76px; border-radius: 50%; border: 3px solid var(--blue); background: var(--blue-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+  .model-ring .big { font-size: 20px; font-weight: 800; color: var(--blue); }
+  .model-ring .sub { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; }
+
+  /* KV rows */
+  .kv-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .kv-row:last-child { border-bottom: none; }
+  .kv-lbl { color: var(--text2); }
+  .kv-val { font-weight: 600; color: var(--text); }
+
+  /* Badges / pills */
+  .pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; display: inline-block; }
+  .p-bet { background: var(--green-bg); color: var(--green); }
+  .p-edge { background: var(--blue-bg); color: var(--blue); }
+  .p-marginal { background: var(--amber-bg); color: var(--amber); }
+  .p-skip { background: var(--red-bg); color: var(--red); }
+  .p-strong { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-mid); }
+  .p-main { background: var(--surface2); color: var(--text3); }
+  .p-prop { background: var(--purple-bg); color: var(--purple); }
+  .tag { font-size: 10px; padding: 1px 7px; border-radius: 4px; background: var(--surface2); color: var(--text3); display: inline-block; }
+
+  /* Alert boxes */
+  .alert { padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; margin-top: 10px; display: flex; align-items: flex-start; gap: 7px; }
+  .alert-warn { background: var(--amber-bg); color: var(--amber); }
+  .alert-info { background: var(--blue-bg); color: var(--blue); }
+  .alert-success { background: var(--green-bg); color: var(--green); }
+  .alert-danger { background: var(--red-bg); color: var(--red); }
+
+  /* Log table */
+  .log-wrap { overflow-x: auto; }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
+  .log-table th { font-size: 11px; font-weight: 600; color: var(--text3); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .log-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  .log-table tr:hover td { background: var(--surface2); }
+  .log-table tr:last-child td { border-bottom: none; }
+
+  /* Instructions */
+  .step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .step-body { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .step-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .callout { background: var(--blue-bg); border-left: 3px solid var(--blue); padding: 10px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 10px 0; }
+  .callout p { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .callout strong { color: var(--blue); }
+  .rule-box { background: var(--green-bg); border: 1px solid var(--green-mid); border-radius: var(--radius-sm); padding: 12px 14px; margin: 10px 0; }
+  .rule-box h4 { font-size: 13px; color: var(--green); margin-bottom: 6px; }
+  .rule-box ul { padding-left: 16px; }
+  .rule-box li { font-size: 13px; color: var(--text2); margin-bottom: 4px; line-height: 1.5; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  h3.section-h { font-size: 15px; font-weight: 700; color: var(--text); margin: 20px 0 10px; }
+  p.body { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 10px; }
+  .sport-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sport-table th { font-size: 11px; font-weight: 600; color: var(--text3); padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; background: var(--surface2); }
+  .sport-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .sport-table tr:last-child td { border-bottom: none; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .app-wrapper { flex-direction: column; }
+    .sidebar { width: 100%; min-width: unset; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 6px 8px; gap: 4px; flex-shrink: 0; -webkit-overflow-scrolling: touch; }
+    .sidebar-logo { display: none; }
+    .sidebar-bottom { display: none; }
+    .nav-section { display: none; }
+    .nav-item { padding: 7px 12px; white-space: nowrap; flex-shrink: 0; width: auto; font-size: 13px; border-radius: var(--radius-sm); margin: 0; }
+    .nav-item svg { display: none; }
+    .main { padding: 14px; max-width: 100%; }
+    .grid3, .grid4, .stat-grid { grid-template-columns: 1fr 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+    .sharp-hdr, .sharp-row { grid-template-columns: 0.8fr 1fr 1fr 28px; }
+  }
+  @media print { .sidebar { display: none; } .btn { display: none; } }
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-title">Sharp Checker</div>
+      <div class="logo-sub">+EV · Predictive Model</div>
+    </div>
+
+    <div class="nav-section">Tools</div>
+    <button class="nav-item active" onclick="showPage('checker')" id="nav-checker">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Checker
+    </button>
+    <button class="nav-item" onclick="showPage('log')" id="nav-log">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Bet Log
+    </button>
+
+    <div class="nav-section">Learn</div>
+    <button class="nav-item" onclick="showPage('instructions')" id="nav-instructions">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      How to Use
+    </button>
+    <button class="nav-item" onclick="showPage('model')" id="nav-model">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Model
+    </button>
+    <button class="nav-item" onclick="showPage('glossary')" id="nav-glossary">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Glossary
+    </button>
+
+    <div class="sidebar-bottom">
+      <button class="theme-btn" onclick="toggleTheme()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        Toggle dark mode
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ===== CHECKER PAGE ===== -->
+    <div id="page-checker" class="page active">
+      <div class="page-title">Bet Checker</div>
+      <div class="page-sub">Enter your bet info, sharp book lines, and prop context to get an EV verdict.</div>
+
+      <!-- Market type toggle -->
+      <div class="mode-toggle">
+        <button class="mt-btn active" id="mt-main" onclick="setMode('main')">Main market</button>
+        <button class="mt-btn" id="mt-prop" onclick="setMode('prop')">Player prop</button>
+      </div>
+
+      <!-- Bet Info -->
+      <div class="card">
+        <div class="card-title">Bet info</div>
+        <div class="grid2" style="margin-bottom:12px">
+          <div class="field">
+            <label>Market description</label>
+            <input type="text" id="mkt" placeholder="e.g. Chiefs -3.5 / LeBron over 27.5 pts">
+          </div>
+          <div class="field">
+            <label>Target book (soft book)</label>
+            <select id="tbook">
+              <optgroup label="Sweepstakes / Social">
+                <option>Fliff</option>
+                <option>Rebet</option>
+                <option>Sportzino</option>
+                <option>OnyxOdds</option>
+                <option>Kalshi</option>
+                <option>Thrillz</option>
+              </optgroup>
+              <optgroup label="Offshore">
+                <option>Bovada</option>
+                <option>MyBookie</option>
+                <option>Sportsbetting.ag</option>
+                <option>BetOnline</option>
+                <option>Xbet</option>
+                <option>BookiePro</option>
+              </optgroup>
+              <optgroup label="P2P / Exchange">
+                <option>Prophet Exchange</option>
+                <option>NoVig</option>
+              </optgroup>
+              <optgroup label="US Regulated (if accessible)">
+                <option>DraftKings</option>
+                <option>FanDuel</option>
+                <option>BetMGM</option>
+                <option>Caesars</option>
+                <option>PointsBet</option>
+                <option>ESPN Bet</option>
+              </optgroup>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="field">
+            <label>Sport</label>
+            <select id="sport" onchange="updateSportHints()">
+              <option value="nba">NBA Basketball</option>
+              <option value="nfl">NFL Football</option>
+              <option value="mlb">MLB Baseball</option>
+              <option value="nhl">NHL Hockey</option>
+              <option value="ncaab">NCAAB Basketball</option>
+              <option value="ncaaf">NCAAF Football</option>
+              <option value="wnba">WNBA Basketball</option>
+              <option value="tennis">Tennis</option>
+              <option value="soccer">Soccer / MLS</option>
+              <option value="mma">MMA / Boxing</option>
+              <option value="golf">Golf</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Your side</label>
+            <select id="side" onchange="updateSideLabels()">
+              <option value="a">Over / Home / Yes / Favorite</option>
+              <option value="b">Under / Away / No / Dog</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Target line (American odds)</label>
+            <input type="number" id="tline" placeholder="-110" step="1">
+          </div>
+        </div>
+
+        <!-- Market width — always visible, applies to both main and prop -->
+        <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Market width</span>
+            <span style="font-size:10px;color:var(--text3);background:var(--border);padding:1px 6px;border-radius:99px">from OddsJam WIDTH column — applies to main markets AND props</span>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label>Width value</label>
+              <input type="number" id="marketWidth" placeholder="e.g. 20" min="1" max="100" step="1" oninput="updateWidthDisplay()">
+              <div class="hint">Tighter = sharper market. ≤20 = full EV. 21–25 = slight penalty. 26–30 = moderate. 30+ = avoid.</div>
+            </div>
+            <div class="field">
+              <label>Confidence rating</label>
+              <div id="widthDisplay" style="padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);font-size:13px;color:var(--text2);margin-top:4px;min-height:36px;display:flex;align-items:center">Enter width to see rating</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prop Model Inputs -->
+      <div id="prop-panel" style="display:none">
+        <div class="card">
+          <div class="card-title">Player context — predictive model inputs</div>
+          <div class="grid3" style="margin-bottom:12px">
+            <div class="field">
+              <label>Player name</label>
+              <input type="text" id="player" placeholder="e.g. Caitlin Clark">
+            </div>
+            <div class="field">
+              <label>Prop type</label>
+              <select id="propType">
+                <optgroup label="Basketball (NBA/WNBA/NCAAB)">
+                  <option value="pts">Points</option>
+                  <option value="reb">Rebounds</option>
+                  <option value="ast">Assists</option>
+                  <option value="pra">Pts+Reb+Ast</option>
+                  <option value="pr">Pts+Reb</option>
+                  <option value="pa">Pts+Ast</option>
+                  <option value="ra">Reb+Ast</option>
+                  <option value="stl">Steals</option>
+                  <option value="blk">Blocks</option>
+                  <option value="stlblk">Steals+Blocks</option>
+                  <option value="threes">3-pointers made</option>
+                  <option value="fgm">FG made</option>
+                  <option value="ftm">FT made</option>
+                  <option value="tov">Turnovers</option>
+                  <option value="min">Minutes played</option>
+                </optgroup>
+                <optgroup label="Football (NFL/NCAAF)">
+                  <option value="pass">Pass yards</option>
+                  <option value="passcmp">Pass completions</option>
+                  <option value="passtd">Pass TDs</option>
+                  <option value="passatt">Pass attempts</option>
+                  <option value="rush">Rush yards</option>
+                  <option value="rushtd">Rush TDs</option>
+                  <option value="rushatt">Rush attempts</option>
+                  <option value="rec">Receptions</option>
+                  <option value="recyds">Rec yards</option>
+                  <option value="rectd">Rec TDs</option>
+                  <option value="tds">TDs scored (any)</option>
+                  <option value="longrec">Longest reception</option>
+                  <option value="scrimmage">Scrimmage yards</option>
+                  <option value="interceptions">Interceptions thrown</option>
+                  <option value="sacks">Sacks</option>
+                </optgroup>
+                <optgroup label="Baseball (MLB)">
+                  <option value="hits">Hits</option>
+                  <option value="tb">Total bases</option>
+                  <option value="hruns">Home runs</option>
+                  <option value="rbi">RBIs</option>
+                  <option value="runs">Runs scored</option>
+                  <option value="sb">Stolen bases</option>
+                  <option value="so">Strikeouts (pitcher)</option>
+                  <option value="outs">Pitcher outs (player outs)</option>
+                  <option value="pitcherh">Hits allowed</option>
+                  <option value="pitcherbb">Walks allowed</option>
+                  <option value="pitcherip">Innings pitched</option>
+                  <option value="era">Earned runs allowed</option>
+                  <option value="hitsruns">Hits+Runs+RBIs</option>
+                </optgroup>
+                <optgroup label="Hockey (NHL)">
+                  <option value="saves">Saves</option>
+                  <option value="shots">Shots on goal</option>
+                  <option value="nhlpts">Points (G+A)</option>
+                  <option value="goals">Goals</option>
+                  <option value="nhlast">Assists</option>
+                  <option value="blocks">Blocked shots</option>
+                  <option value="pim">Penalty minutes</option>
+                </optgroup>
+                <optgroup label="Tennis">
+                  <option value="tennisGames">Games won</option>
+                  <option value="tennisAces">Aces</option>
+                  <option value="tennisDf">Double faults</option>
+                  <option value="tennisSets">Sets won</option>
+                  <option value="tennisBreaks">Break points converted</option>
+                </optgroup>
+                <optgroup label="MMA / Boxing">
+                  <option value="mmaSig">Significant strikes</option>
+                  <option value="mmaTd">Takedowns</option>
+                  <option value="mmaRounds">Rounds completed</option>
+                </optgroup>
+                <optgroup label="Golf">
+                  <option value="golfScore">Score (strokes)</option>
+                  <option value="golfBirdies">Birdies</option>
+                  <option value="golfBogeys">Bogeys</option>
+                </optgroup>
+                <option value="custom">Custom stat</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Prop line</label>
+              <input type="number" id="propLine" placeholder="27.5" step="0.5">
+              <div class="hint" id="propLineHint">The number you're betting over/under</div>
+            </div>
+          </div>
+
+          <div class="grid3" style="margin-bottom:12px">
+            <div class="field">
+              <label>L5 game average</label>
+              <input type="number" id="l5avg" placeholder="29.2" step="0.1">
+              <div class="hint">Last 5 games</div>
+            </div>
+            <div class="field">
+              <label>L10 game average</label>
+              <input type="number" id="l10avg" placeholder="27.8" step="0.1">
+              <div class="hint">Last 10 games</div>
+            </div>
+            <div class="field">
+              <label>Season average</label>
+              <input type="number" id="seasonavg" placeholder="27.1" step="0.1">
+              <div class="hint">Full season avg</div>
+            </div>
+          </div>
+
+          <div class="grid3" style="margin-bottom:12px">
+            <div class="field">
+              <label>H2H vs this opponent</label>
+              <input type="number" id="h2havg" placeholder="31.0" step="0.1">
+              <div class="hint">Career avg vs this team (blank if N/A)</div>
+            </div>
+            <div class="field">
+              <label>Home/Away split avg</label>
+              <input type="number" id="locationavg" placeholder="28.5" step="0.1">
+              <div class="hint">Home if home, Away if away</div>
+            </div>
+            <div class="field">
+              <label>Hit rate at line — L10 (%)</label>
+              <input type="number" id="hitrate" placeholder="70" min="0" max="100" step="1">
+              <div class="hint">% of last 10 games he hit</div>
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div class="field">
+              <label>Opp defensive rank (1=best)</label>
+              <input type="number" id="opprank" placeholder="18" min="1" max="32" step="1">
+              <div class="hint">How good is their defense vs this stat</div>
+            </div>
+            <div class="field">
+              <label>Injury / rest flag</label>
+              <select id="injFlag">
+                <option value="0">Healthy, normal rest</option>
+                <option value="0.03">Extra rest (3+ days off)</option>
+                <option value="0.05">Key teammate out — usage boost</option>
+                <option value="-0.04">Questionable / limited minutes</option>
+                <option value="-0.08">Back-to-back / fatigue</option>
+                <option value="-0.12">Multiple key teammates out</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Pace / game environment</label>
+              <select id="paceFlag">
+                <option value="0">Normal pace matchup</option>
+                <option value="0.03">High pace — above avg total</option>
+                <option value="-0.03">Low pace — below avg total</option>
+                <option value="0.02">High O/U (inflated scoring)</option>
+                <option value="-0.02">Low O/U (defensive game)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sharp Lines -->
+      <div class="card">
+        <div class="card-title">Sharp book lines — up to 5 books (Pinnacle · Circa · Prophet · Bet105 · Betfair)</div>
+
+        <!-- Dynamic side reference label -->
+        <div id="sideRefBox" style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--blue);line-height:1.6">
+          <strong>Side A</strong> = the odds for <span id="sideALabel" style="font-weight:700">Over / Home / Favorite</span> &nbsp;·&nbsp;
+          <strong>Side B</strong> = the odds for <span id="sideBLabel" style="font-weight:700">Under / Away / Dog</span><br>
+          <span style="opacity:0.8">Enter both sides from the <em>same book</em> on the same row. You are betting <strong>Side A</strong>.</span>
+        </div>
+
+        <div class="sharp-hdr">
+          <span>Book</span>
+          <span id="hdrA" style="color:var(--green);font-weight:600">Side A — YOUR BET</span>
+          <span id="hdrB">Side B — opposite</span>
+          <span></span>
+        </div>
+        <div id="sharp-rows"></div>
+        <button class="add-link" onclick="addSharpRow()">+ Add book</button>
+
+        <div style="margin-top:14px" class="grid2">
+          <div class="field">
+            <label>Bankroll ($) <span style="font-size:10px;color:var(--text3)">your total betting bankroll</span></label>
+            <input type="number" id="bankroll" value="100" min="1" step="10">
+          </div>
+          <div class="field">
+            <label>Max bet (1 unit) <span style="font-size:10px;color:var(--text3)">hard cap per bet</span></label>
+            <input type="number" id="maxUnit" value="10" min="1" step="1">
+            <div class="hint">Kelly will never suggest more than this regardless of EV</div>
+          </div>
+          <div class="field" id="model-weight-wrap" style="display:none">
+            <label>Model weight: <strong id="mw-display">30%</strong></label>
+            <input type="range" id="modelWeight" min="0" max="60" value="30" step="5" oninput="document.getElementById('mw-display').textContent=this.value+'%'">
+            <div class="hint">How much predictive model influences the composite probability (0% = sharp lines only)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sharp weights + Market Width + Smart Profiles -->
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title" style="margin:0">Sharp book weights & market confidence</span>
+          <button class="btn btn-sm" onclick="autoSetProfile()" style="font-size:11px">⚡ Auto-set for this market</button>
+        </div>
+
+        <!-- Sharp book profile recommendation -->
+        <div id="profileBox" style="display:none;margin-bottom:12px;padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;line-height:1.7;background:var(--green-bg);border:1px solid var(--green-mid);color:var(--green)"></div>
+
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:7px 10px;background:var(--blue-bg);border-radius:var(--radius-sm);color:var(--blue)">
+          Weights are matched by book name — type the book name in the sharp lines section above and the correct weight applies automatically. ⚡ Auto-set fills these based on sport/market.
+        </div>
+
+        <div id="weightRows" style="display:grid;gap:8px;margin-bottom:12px"></div>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="runChecker()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Check this bet
+      </button>
+
+      <!-- RESULT -->
+      <div id="result" style="display:none; margin-top:16px">
+        <div class="card">
+          <div class="verdict-wrap">
+            <div id="modelRing" class="model-ring" style="display:none">
+              <div class="big" id="modelScoreDisp">—</div>
+              <div class="sub">model</div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <span id="vPill" class="verdict-pill">—</span>
+                <div class="ev-display" id="vEV">—%<sub> expected value</sub></div>
+              </div>
+              <div id="sportNote" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
+            </div>
+          </div>
+
+          <div id="convergenceNote" style="display:none"></div>
+
+          <div class="stat-grid">
+            <div class="stat-card"><div class="stat-lbl">Fair odds</div><div class="stat-val" id="sFair">—</div></div>
+            <div class="stat-card"><div class="stat-lbl">Composite prob</div><div class="stat-val" id="sProb">—</div></div>
+            <div class="stat-card"><div class="stat-lbl">Implied prob</div><div class="stat-val" id="sImpl">—</div></div>
+            <div class="stat-card"><div class="stat-lbl">CLV edge</div><div class="stat-val" id="sCLV">—</div></div>
+          </div>
+          <div id="widthResultBox" style="display:none;margin-bottom:12px"></div>
+
+          <!-- Prop signals -->
+          <div id="propSignals" style="display:none;margin-bottom:14px">
+            <div class="card-title">Predictive model signals</div>
+            <div id="signalBars"></div>
+            <div class="divider"></div>
+            <div class="kv-row"><span class="kv-lbl">Model probability</span><span class="kv-val" id="modelProbDisp">—</span></div>
+            <div class="kv-row"><span class="kv-lbl">Sharp-book probability</span><span class="kv-val" id="sharpProbDisp">—</span></div>
+            <div class="kv-row"><span class="kv-lbl">Model vs sharp agreement</span><span class="kv-val" id="agreementDisp">—</span></div>
+            <div class="kv-row"><span class="kv-lbl">Sport variance profile</span><span class="kv-val" id="sportProfile">—</span></div>
+          </div>
+
+          <!-- Edge bar -->
+          <div class="card-title" style="margin-bottom:6px">Edge vs. target line</div>
+          <div class="bar-track"><div class="bar-fill" id="edgeBar" style="width:50%"></div></div>
+          <div class="bar-labels"><span>−10%</span><span>0</span><span>+10%</span></div>
+
+          <div class="divider"></div>
+          <div class="card-title" style="margin-bottom:8px">Bet sizing</div>
+
+          <!-- OddsJam size + confidence adjustment -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div class="field">
+              <label style="font-size:11px">OddsJam rec. size ($)</label>
+              <input type="number" id="ojSize" placeholder="e.g. 25" min="0" step="1" style="font-size:14px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface2);color:var(--text);width:100%">
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Enter what OddsJam suggests</div>
+            </div>
+            <div class="field">
+              <label style="font-size:11px">Flat bet mode</label>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                <input type="checkbox" id="flatMode" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+                <label for="flatMode" style="font-size:13px;color:var(--text2);cursor:pointer">$<input type="number" id="flatAmt" value="5" min="1" step="1" style="width:50px;font-size:13px;padding:2px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);margin:0 3px"> flat per bet</label>
+              </div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Use until 200 bets logged</div>
+            </div>
+          </div>
+
+          <!-- Recommended stake box -->
+          <div id="recStakeBox" style="background:var(--green-bg);border:1.5px solid var(--green-mid);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.05em">Recommended stake</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:1px" id="recStakeNote">—</div>
+              </div>
+              <div style="font-size:26px;font-weight:800;color:var(--green)" id="recStake">—</div>
+            </div>
+            <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
+              <div style="font-size:11px;color:var(--text3)">Confidence grade:</div>
+              <div style="font-size:13px;font-weight:700" id="confGrade">—</div>
+              <div style="font-size:11px;color:var(--text3)" id="confAdj">—</div>
+            </div>
+          </div>
+
+          <div class="kv-row"><span class="kv-lbl">Full Kelly (uncapped)</span><span class="kv-val" id="kFull">—</span></div>
+          <div class="kv-row"><span class="kv-lbl">Quarter Kelly (uncapped)</span><span class="kv-val" id="kQtr">—</span></div>
+          <div class="kv-row"><span class="kv-lbl">Max unit cap</span><span class="kv-val" id="maxUnitDisplay">$10</span></div>
+
+          <div class="divider"></div>
+          <div class="card-title" style="margin-bottom:6px">Full breakdown</div>
+          <p id="vBreakdown" style="font-size:12px;color:var(--text2);line-height:1.7"></p>
+          <div id="warnBox"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LOG PAGE ===== -->
+    <div id="page-log" class="page">
+      <div class="page-title">Bet Log</div>
+      <div class="page-sub">Syncs across all your devices in real time.</div>
+
+      <!-- Sync status bar -->
+      <div id="syncBar" style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border);margin-bottom:14px;font-size:12px">
+        <div id="syncDot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
+        <span id="syncStatus" style="color:var(--text2)">Connecting...</span>
+        <button class="btn btn-sm" style="margin-left:auto;font-size:11px" onclick="syncLog()">↻ Sync now</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title" style="margin:0">History (<span id="logCount">0</span> bets · <span id="placedCount">0</span> placed)</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-green" onclick="exportCSV()">Export CSV</button>
+            <button class="btn btn-sm btn-danger" onclick="clearLog()">Clear all</button>
+          </div>
+        </div>
+
+        <!-- Progress toward 200 bet threshold -->
+        <div id="progressWrap" style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px">
+            <span>Proving ground progress</span>
+            <span id="progressLabel">0 / 200 bets placed</span>
+          </div>
+          <div style="background:var(--surface2);border-radius:99px;height:6px;overflow:hidden">
+            <div id="progressBar" style="height:100%;border-radius:99px;background:var(--blue);transition:width .4s ease;width:0%"></div>
+          </div>
+          <div id="progressNote" style="font-size:11px;color:var(--text3);margin-top:4px">Track 200 placed bets before sizing up. Flat bet mode recommended until then.</div>
+        </div>
+
+        <div id="logSummary" style="display:none;margin-bottom:12px">
+          <div class="grid4" style="margin-bottom:10px">
+            <div class="stat-card"><div class="stat-lbl">Checked</div><div class="stat-val" id="ls-total">0</div></div>
+            <div class="stat-card"><div class="stat-lbl">W / L</div><div class="stat-val" id="ls-bets">—</div></div>
+            <div class="stat-card"><div class="stat-lbl">Avg EV% (placed)</div><div class="stat-val" id="ls-avgev">—</div></div>
+            <div class="stat-card"><div class="stat-lbl">ROI</div><div class="stat-val" id="ls-avgkelly">—</div></div>
+          </div>
+          <div class="grid4" id="ls-extra"></div>
+        </div>
+        <div class="log-wrap">
+          <div id="logContent"><p style="font-size:13px;color:var(--text3);padding:8px 0">No bets logged yet. Run the checker to get started.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== INSTRUCTIONS PAGE ===== -->
+    <div id="page-instructions" class="page">
+      <div class="page-title">How to use this tool</div>
+      <div class="page-sub">Your step-by-step workflow for finding and validating +EV bets consistently.</div>
+
+      <div class="card">
+        <div class="card-title">The sharp bettor workflow</div>
+
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Find a potential bet on OddsJam</div>
+            <div class="step-desc">Open OddsJam and set your sharp book references to Pinnacle, Circa, and Prophet Exchange. Look for bets flagged as +EV — particularly on your soft target books (Fliff, Bovada, Rebet, MyBookie, Sportzino, OnyxOdds). Filter for bets where the EV% is at least +2% and the sharp-book line is meaningfully different from the target book's line.</div>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Copy both sides of the sharp book lines</div>
+            <div class="step-desc">This is the key step. Don't just grab the line you're betting — grab BOTH sides from each sharp book. For example if you're betting the over on Pinnacle, write down what Pinnacle has the over AND the under at. You need both sides to calculate the no-vig true probability. Enter these in the "Sharp book lines" section.</div>
+          </div>
+        </div>
+
+        <div class="callout">
+          <p><strong>Why both sides?</strong> Every sportsbook builds a margin into their lines. If they offer -110 / -110 on a coin flip, the true odds are +100 / +100. By entering both sides, the model removes that margin and finds the true implied probability — the number that actually matters.</p>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">For player props — enter the historical context</div>
+            <div class="step-desc">Switch to "Player prop" mode. Fill in what you can from the player's recent stats: L5 average, L10 average, season average, and hit rate at the line are the most important. H2H and home/away splits add more precision. You can find these in seconds on Basketball-Reference, Pro-Football-Reference, Stathead, or the OddsJam prop research tab. You don't need all fields — the model uses whatever you give it.</div>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Set the right sport</div>
+            <div class="step-desc">Select the sport from the dropdown. This matters for the predictive model — NFL pass yards, NBA points, and MLB strikeouts have very different variance profiles. The model adjusts the probability distribution width based on sport-specific standard deviation data, which changes the true probability calculation meaningfully.</div>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Read the result and size your bet</div>
+            <div class="step-desc">Hit "Check this bet." The verdict tells you whether to bet, the EV% tells you your theoretical edge, and the Half Kelly tells you how much to stake from your bankroll. For player props, you'll also see the model probability ring, signal bars for each input, and a convergence signal comparing the model to the sharp books.</div>
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <div class="step-title">Log every bet and track CLV</div>
+            <div class="step-desc">Every check is automatically saved to your Bet Log (persistent in this browser). After the game, note whether you won, and more importantly — check what the closing line was. If you consistently beat the closing line, your process is working regardless of short-term results. CLV is the real performance metric for sharp bettors.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Verdict guide</div>
+        <div class="kv-row">
+          <span><span class="pill p-strong">STRONG BET</span></span>
+          <span class="kv-val" style="font-size:13px">EV ≥ +3% AND model/sharp agree within 6%. Highest confidence. Size with Half Kelly.</span>
+        </div>
+        <div class="kv-row">
+          <span><span class="pill p-bet">BET</span></span>
+          <span class="kv-val" style="font-size:13px">EV ≥ +2%. Clear positive expected value. Bet with Half Kelly.</span>
+        </div>
+        <div class="kv-row">
+          <span><span class="pill p-edge">EDGE</span></span>
+          <span class="kv-val" style="font-size:13px">EV +0.5–2%. Playable edge. Use Quarter Kelly or a flat small unit.</span>
+        </div>
+        <div class="kv-row">
+          <span><span class="pill p-marginal">MARGINAL</span></span>
+          <span class="kv-val" style="font-size:13px">EV 0–0.5%. Barely positive. Only play if you have extra model confidence.</span>
+        </div>
+        <div class="kv-row">
+          <span><span class="pill p-skip">SKIP</span></span>
+          <span class="kv-val" style="font-size:13px">EV below 0%. Negative expected value. Do not bet.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Bankroll rules to build consistently</div>
+        <div class="rule-box">
+          <h4>The non-negotiables</h4>
+          <ul>
+            <li>Never bet more than Full Kelly on any single bet. Half Kelly is the professional standard.</li>
+            <li>No bet should exceed 5% of your total bankroll regardless of Kelly output.</li>
+            <li>Only chase EV, not wins. A losing bet at +4% EV is a good bet. A winning bet at -3% EV is a bad bet.</li>
+            <li>Your bet log is your most valuable asset. Every bet in, win or lose.</li>
+            <li>Don't bet a book that's already limiting you. Preserve soft-book access — it's your edge source.</li>
+            <li>When model and sharp lines diverge &gt;8%, verify news (lineup, injury, weather) before betting.</li>
+            <li>Aim for volume over big individual bets. +EV is a law of large numbers game.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Where to get sharp book lines fast</div>
+        <div class="kv-row"><span class="kv-lbl">OddsJam</span><span class="kv-val" style="font-size:13px">Best all-in-one. Set reference books to Pinnacle/Circa/Prophet. Shows EV% live.</span></div>
+        <div class="kv-row"><span class="kv-lbl">Prop Professor</span><span class="kv-val" style="font-size:13px">Specialized for player props. Better for researching prop context + hit rates.</span></div>
+        <div class="kv-row"><span class="kv-lbl">Pinnacle</span><span class="kv-val" style="font-size:13px">The sharpest book in the world. Their line = the market's best estimate.</span></div>
+        <div class="kv-row"><span class="kv-lbl">Circa Sports</span><span class="kv-val" style="font-size:13px">Sharp Vegas book. Excellent on NFL. Available in limited states.</span></div>
+        <div class="kv-row"><span class="kv-lbl">Prophet Exchange</span><span class="kv-val" style="font-size:13px">Peer-to-peer exchange = no vig built in. Near-true odds on most markets.</span></div>
+      </div>
+    </div>
+
+    <!-- ===== MODEL PAGE ===== -->
+    <div id="page-model" class="page">
+      <div class="page-title">How the model works</div>
+      <div class="page-sub">The math and logic behind every calculation in the checker.</div>
+
+      <div class="card">
+        <div class="card-title">Two-signal architecture</div>
+        <p class="body">The checker combines two independent probability estimates into a single composite probability. The composite probability is what drives the EV calculation and the verdict.</p>
+        <div class="kv-row"><span class="kv-lbl">Signal 1 — Sharp-book consensus</span><span class="kv-val" style="font-size:12px">No-vig line conversion from Pinnacle / Circa / Prophet</span></div>
+        <div class="kv-row"><span class="kv-lbl">Signal 2 — Predictive model</span><span class="kv-val" style="font-size:12px">Historical performance + matchup + context</span></div>
+        <div class="kv-row"><span class="kv-lbl">Composite probability</span><span class="kv-val" style="font-size:12px">Sharp% × (1 − model weight) + Model% × model weight</span></div>
+        <div class="callout" style="margin-top:12px">
+          <p><strong>Default: 70% sharp / 30% model.</strong> This is intentional. Sharp books are extremely efficient. The model adds value at the margin — especially for catching lines that haven't fully updated to recent form. You can slide the model weight to 0% to use sharp lines only.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Step 1 — No-vig conversion</div>
+        <p class="body">For each sharp book, you enter both sides of a market (e.g. Over -120 / Under +105). The model converts each to an implied probability, adds them (they sum to more than 100% — the extra is the book's margin), then normalizes each side to remove the margin.</p>
+        <div class="kv-row"><span class="kv-lbl">American to prob (negative)</span><span class="kv-val" style="font-size:12px">|odds| / (|odds| + 100)</span></div>
+        <div class="kv-row"><span class="kv-lbl">American to prob (positive)</span><span class="kv-val" style="font-size:12px">100 / (odds + 100)</span></div>
+        <div class="kv-row"><span class="kv-lbl">No-vig prob (side A)</span><span class="kv-val" style="font-size:12px">implied_A / (implied_A + implied_B)</span></div>
+        <p class="body" style="margin-top:10px">Multiple books are then blended using your custom weights (Pinnacle 50%, Circa 30%, Prophet 20% by default). More weight = more influence on the consensus.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Step 2 — Predictive model (player props)</div>
+        <p class="body">The model first calculates a weighted average of your historical inputs against the prop line:</p>
+        <div class="kv-row"><span class="kv-lbl">L5 average</span><span class="kv-val">35% weight</span></div>
+        <div class="kv-row"><span class="kv-lbl">L10 average</span><span class="kv-val">25% weight</span></div>
+        <div class="kv-row"><span class="kv-lbl">Season average</span><span class="kv-val">15% weight</span></div>
+        <div class="kv-row"><span class="kv-lbl">H2H matchup average</span><span class="kv-val">10% weight</span></div>
+        <div class="kv-row"><span class="kv-lbl">Home/Away split</span><span class="kv-val">5% weight</span></div>
+        <p class="body" style="margin-top:10px">The spread between the weighted average and the prop line is then fed into a normal distribution (bell curve) to get a base probability. The width of that bell curve is sport- and stat-specific (see below).</p>
+        <p class="body">Adjustments are then stacked on top: opponent defensive rank, hit rate at the line, injury/rest flag, and pace/game environment. These shift the probability up or down before the composite blend.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Sport-specific variance profiles</div>
+        <p class="body">Different stats have very different volatility. A QB throwing for 300 yards is a much "wider" distribution than an NBA player scoring 25 points — meaning the probability curve is flatter and small edges from the model are less reliable. The checker uses calibrated standard deviation values for each sport/stat combination.</p>
+        <table class="sport-table">
+          <thead><tr><th>Sport / Stat</th><th>Std Dev % of line</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>NBA — Points</td><td>16%</td><td>High consistency over 35+ min, fewer variables</td></tr>
+            <tr><td>NBA — Rebounds / Assists</td><td>22%</td><td>More game-flow dependent, volatile</td></tr>
+            <tr><td>NBA — Pts+Reb+Ast</td><td>14%</td><td>Larger number, regression to mean</td></tr>
+            <tr><td>NFL — Pass yards</td><td>28%</td><td>High variance: game script, defense, blitzes</td></tr>
+            <tr><td>NFL — Rush yards</td><td>32%</td><td>Most volatile skill-position stat</td></tr>
+            <tr><td>NFL — Receptions</td><td>26%</td><td>Targets variable; coverage scheme effects</td></tr>
+            <tr><td>NFL — Rec yards</td><td>30%</td><td>Big-play potential inflates variance</td></tr>
+            <tr><td>NFL — TDs</td><td>35%</td><td>Binary/low-frequency, very high variance</td></tr>
+            <tr><td>MLB — Hits</td><td>35%</td><td>Matchup-heavy, pitcher dependent</td></tr>
+            <tr><td>MLB — Strikeouts (pitcher)</td><td>20%</td><td>Pitcher skill dominates, more predictable</td></tr>
+            <tr><td>MLB — Total bases</td><td>38%</td><td>Highly volatile, park/pitcher dependent</td></tr>
+            <tr><td>NHL — Saves</td><td>14%</td><td>High volume stat, stable for starters</td></tr>
+            <tr><td>NHL — Shots on goal</td><td>22%</td><td>Line matchups and usage variable</td></tr>
+            <tr><td>NCAAB — Points</td><td>20%</td><td>More volatile than NBA, matchup-heavy</td></tr>
+            <tr><td>NCAAF — Pass yards</td><td>30%</td><td>Similar to NFL but more game-script variance</td></tr>
+            <tr><td>Default</td><td>20%</td><td>Conservative fallback for unknown stats</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Step 3 — EV and Kelly</div>
+        <p class="body">Expected Value measures the average outcome per dollar wagered over infinite bets at these odds.</p>
+        <div class="kv-row"><span class="kv-lbl">EV formula</span><span class="kv-val" style="font-size:12px">(true_prob × win_amount) − (1 − true_prob) × stake</span></div>
+        <div class="kv-row"><span class="kv-lbl">Full Kelly</span><span class="kv-val" style="font-size:12px">(b × p − q) / b × bankroll</span></div>
+        <div class="kv-row"><span class="kv-lbl">Where b =</span><span class="kv-val" style="font-size:12px">decimal odds profit (e.g. -110 = 0.909)</span></div>
+        <div class="callout" style="margin-top:10px">
+          <p><strong>Why Half Kelly?</strong> Full Kelly maximizes long-run bankroll growth but causes large swings that most bettors can't stomach. Half Kelly gives you ~75% of the growth with half the volatility. Quarter Kelly is for when you have lower confidence in the line accuracy.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Convergence signal</div>
+        <p class="body">When both signals (model and sharp books) agree, confidence is highest. When they diverge, it's a warning sign — the market may be pricing in information your historical model doesn't have (recent injury news, lineup change, weather, motivation).</p>
+        <div class="kv-row"><span class="kv-lbl">Strong agreement (&lt;3% gap)</span><span style="color:var(--green);font-weight:600;font-size:12px">Highest confidence — STRONG BET eligible</span></div>
+        <div class="kv-row"><span class="kv-lbl">Moderate (3–8% gap)</span><span style="color:var(--amber);font-weight:600;font-size:12px">Normal — proceed as EV suggests</span></div>
+        <div class="kv-row"><span class="kv-lbl">Divergent (&gt;8% gap)</span><span style="color:var(--red);font-weight:600;font-size:12px">Caution — verify news before betting</span></div>
+      </div>
+    </div>
+
+    <!-- ===== GLOSSARY PAGE ===== -->
+    <div id="page-glossary" class="page">
+      <div class="page-title">Glossary</div>
+      <div class="page-sub">Every term used in the checker, defined simply.</div>
+
+      <div class="card">
+        <h3 class="section-h">Core concepts</h3>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Expected Value (EV)</span><span class="kv-val" style="font-size:12px;max-width:480px">The average profit or loss per dollar bet, over time. +EV means you profit long-term; −EV means you lose. Sharp betting is about finding +EV bets.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Implied probability</span><span class="kv-val" style="font-size:12px;max-width:480px">What the sportsbook's odds say the probability of an outcome is, including their margin. -110 implies 52.4%, not 50%.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">True probability</span><span class="kv-val" style="font-size:12px;max-width:480px">The actual probability after removing the book's margin (vig). This is what we calculate from sharp-book lines.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Vig / juice</span><span class="kv-val" style="font-size:12px;max-width:480px">The sportsbook's built-in margin. On a -110 / -110 market, both sides pay $110 to win $100, meaning the book keeps $10 per $220 wagered (~4.5%).</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">No-vig line</span><span class="kv-val" style="font-size:12px;max-width:480px">The fair market line with the sportsbook's margin removed. Represents what the odds "should" be at true probability.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Closing Line Value (CLV)</span><span class="kv-val" style="font-size:12px;max-width:480px">The difference between the odds you bet at and the closing (final) odds. Consistently beating the closing line is the gold standard for proving your betting process is sharp.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Kelly Criterion</span><span class="kv-val" style="font-size:12px;max-width:480px">A mathematical formula for optimal bet sizing given your edge and odds. Maximizes long-run bankroll growth. Most pros use Half Kelly (50% of the Kelly output) to reduce variance.</span></div>
+
+        <h3 class="section-h">Books</h3>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Sharp book</span><span class="kv-val" style="font-size:12px;max-width:480px">A sportsbook that accepts sharp (winning) action and doesn't limit winners. Their lines are the most accurate reflection of true probability. Examples: Pinnacle, Circa, Prophet Exchange.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Soft book</span><span class="kv-val" style="font-size:12px;max-width:480px">A recreational sportsbook that prices lines less efficiently and is slower to move. This is where your edge comes from. Examples: Fliff, Bovada, Rebet, MyBookie, Sportzino.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Line shopping</span><span class="kv-val" style="font-size:12px;max-width:480px">Comparing odds across books to find the best price. A key habit — half a point or 5 cents of juice adds up significantly over thousands of bets.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Limiting</span><span class="kv-val" style="font-size:12px;max-width:480px">When a soft book restricts your max bet size because they identify you as a winning bettor. This is the goal — it means your process is working. Protect your accounts early.</span></div>
+
+        <h3 class="section-h">Model terms</h3>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Composite probability</span><span class="kv-val" style="font-size:12px;max-width:480px">The blended probability from sharp lines and predictive model. This drives the EV calculation.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Convergence</span><span class="kv-val" style="font-size:12px;max-width:480px">When the model probability and sharp-book probability agree closely. High convergence = high confidence in the edge.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Hit rate</span><span class="kv-val" style="font-size:12px;max-width:480px">The % of recent games where a player exceeded a given prop line. At 70%+ hit rate over L10, the model adds a meaningful probability boost.</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Variance profile</span><span class="kv-val" style="font-size:12px;max-width:480px">The standard deviation used in the probability model for a given sport/stat. High-variance stats (NFL rush yards) need a bigger edge to bet confidently vs low-variance stats (NHL saves).</span></div>
+        <div class="kv-row"><span class="kv-lbl" style="min-width:160px">Model weight</span><span class="kv-val" style="font-size:12px;max-width:480px">How much the predictive model's probability influences the composite probability vs the sharp-book consensus. Default is 30%. Set to 0% to use sharp lines only.</span></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ===== SPORT VARIANCE PROFILES ===== */
+const SPORT_VARIANCE = {
+  nba: { pts: 0.16, reb: 0.22, ast: 0.22, pra: 0.14, pr: 0.16, pa: 0.18, ra: 0.20, stl: 0.30, blk: 0.32, stlblk: 0.28, threes: 0.28, fgm: 0.18, ftm: 0.20, tov: 0.28, min: 0.14, default: 0.20 },
+  wnba: { pts: 0.18, reb: 0.24, ast: 0.24, pra: 0.16, pr: 0.18, pa: 0.20, ra: 0.22, stl: 0.32, blk: 0.34, threes: 0.30, default: 0.22 },
+  nfl: { pass: 0.28, passcmp: 0.22, passtd: 0.35, passatt: 0.20, rush: 0.32, rushtd: 0.38, rushatt: 0.25, rec: 0.26, recyds: 0.30, rectd: 0.40, tds: 0.35, longrec: 0.35, scrimmage: 0.28, interceptions: 0.40, sacks: 0.38, default: 0.28 },
+  mlb: { hits: 0.35, tb: 0.38, hruns: 0.45, rbi: 0.38, runs: 0.35, sb: 0.45, so: 0.20, outs: 0.22, pitcherh: 0.28, pitcherbb: 0.32, pitcherip: 0.22, era: 0.35, hitsruns: 0.32, default: 0.30 },
+  nhl: { saves: 0.14, shots: 0.22, nhlpts: 0.30, goals: 0.38, nhlast: 0.32, blocks: 0.28, pim: 0.40, default: 0.20 },
+  ncaaf: { pass: 0.30, rush: 0.34, rec: 0.28, recyds: 0.32, tds: 0.38, default: 0.30 },
+  ncaab: { pts: 0.20, reb: 0.24, ast: 0.24, threes: 0.30, default: 0.22 },
+  tennis: { tennisGames: 0.18, tennisAces: 0.28, tennisDf: 0.32, tennisSets: 0.22, tennisBreaks: 0.30, default: 0.20 },
+  soccer: { default: 0.25 },
+  mma: { mmaSig: 0.32, mmaTd: 0.38, mmaRounds: 0.30, default: 0.30 },
+  golf: { golfScore: 0.15, golfBirdies: 0.25, golfBogeys: 0.25, default: 0.20 },
+  other: { default: 0.20 }
+};
+
+const SPORT_NAMES = {
+  nba:'NBA', nfl:'NFL', mlb:'MLB', nhl:'NHL', ncaab:'NCAAB', ncaaf:'NCAAF',
+  wnba:'WNBA', tennis:'Tennis', soccer:'Soccer', mma:'MMA', golf:'Golf', other:'Other'
+};
+
+function getVariance(sport, propType) {
+  const profile = SPORT_VARIANCE[sport] || SPORT_VARIANCE.other;
+  return profile[propType] || profile.default;
+}
+
+/* ===== STATE ===== */
+let sharpBooks = [
+  {name:'Pinnacle', a:'', b:''},
+  {name:'Circa', a:'', b:''},
+  {name:'Prophet Exchange', a:'', b:''}
+];
+let betLog = JSON.parse(localStorage.getItem('sharpBetLog') || '[]');
+let currentMode = 'main';
+
+/* ===== NAVIGATION ===== */
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'log') renderLog();
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const isDark = cur === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('theme');
+  /* Default to dark — only go light if user explicitly chose light */
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', '');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+
+/* ===== MODE ===== */
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('mt-main').classList.toggle('active', m === 'main');
+  document.getElementById('mt-prop').classList.toggle('active', m === 'prop');
+  document.getElementById('prop-panel').style.display = m === 'prop' ? 'block' : 'none';
+  document.getElementById('model-weight-wrap').style.display = m === 'prop' ? 'flex' : 'none';
+}
+
+function updateSportHints() {
+  // Could update placeholder text per sport in future
+}
+
+/* ===== SHARP ROWS ===== */
+function buildSharpRowHTML(i, b) {
+  return `<div class="sharp-row" id="sr-${i}">
+    <input type="text" id="sb-${i}" value="${b.name}" placeholder="Book name" onchange="syncWeightsFromBooks()">
+    <input type="number" id="sa-${i}" value="${b.a}" placeholder="Your side odds" step="1" style="border-color:var(--green);border-width:1.5px" title="Side A — the odds for the side YOU are betting">
+    <input type="number" id="sb2-${i}" value="${b.b}" placeholder="Opposite side odds" step="1" title="Side B — the opposite side odds from the same book">
+    <button class="rm-btn" onclick="removeSharpRow(${i})" title="Remove">✕</button>
+  </div>`;
+}
+
+function updateSideLabels() {
+  const sideEl = document.getElementById('side');
+  if (!sideEl) return;
+  const isA = sideEl.value === 'a';
+  const aLabel = isA ? 'Over / Home / Favorite' : 'Under / Away / Dog';
+  const bLabel = isA ? 'Under / Away / Dog' : 'Over / Home / Favorite';
+  const elA = document.getElementById('sideALabel');
+  const elB = document.getElementById('sideBLabel');
+  const hdrA = document.getElementById('hdrA');
+  const hdrB = document.getElementById('hdrB');
+  if (elA) elA.textContent = aLabel;
+  if (elB) elB.textContent = bLabel;
+  if (hdrA) hdrA.textContent = 'Side A — ' + aLabel.split('/')[0].trim() + ' (YOUR BET)';
+  if (hdrB) hdrB.textContent = 'Side B — ' + bLabel.split('/')[0].trim() + ' (opposite)';
+}
+
+function renderSharpRows() {
+  document.getElementById('sharp-rows').innerHTML = sharpBooks.map((b, i) => buildSharpRowHTML(i, b)).join('');
+}
+
+function syncSharp() {
+  sharpBooks.forEach((b, i) => {
+    const n = document.getElementById('sb-' + i);
+    const a = document.getElementById('sa-' + i);
+    const b2 = document.getElementById('sb2-' + i);
+    if (n) b.name = n.value;
+    if (a) b.a = a.value;
+    if (b2) b.b = b2.value;
+  });
+}
+
+function addSharpRow() {
+  if (sharpBooks.length >= 5) return;
+  syncSharp();
+  sharpBooks.push({name: '', a: '', b: ''});
+  renderSharpRows();
+}
+
+function removeSharpRow(i) {
+  syncSharp();
+  sharpBooks.splice(i, 1);
+  renderSharpRows();
+}
+
+/* ===== MATH ===== */
+function amToProb(o) {
+  const v = parseFloat(o);
+  if (isNaN(v)) return null;
+  return v < 0 ? (-v) / (-v + 100) : 100 / (v + 100);
+}
+
+function probToAm(p) {
+  if (p >= 1) return 'inf';
+  if (p <= 0) return '+inf';
+  if (p > 0.5) return String(Math.round(-p / (1 - p) * 100));
+  return '+' + Math.round((1 - p) / p * 100);
+}
+
+function noVig(aO, bO) {
+  const pa = amToProb(aO), pb = amToProb(bO);
+  if (pa === null || pb === null) return null;
+  const t = pa + pb;
+  return { a: pa / t, b: pb / t };
+}
+
+function normCDF(x) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(x));
+  const d = 0.3989423 * Math.exp(-x * x / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.7814779 + t * (-1.8212560 + t * 1.3302744))));
+  return x >= 0 ? 1 - p : p;
+}
+
+function calcEV(trueProb, targetOdds) {
+  const o = parseFloat(targetOdds);
+  if (isNaN(o)) return null;
+  const win = o > 0 ? o / 100 : 100 / (-o);
+  return trueProb * win - (1 - trueProb) * 1;
+}
+
+function kellyBet(prob, odds, bankroll) {
+  const o = parseFloat(odds);
+  if (isNaN(o)) return 0;
+  const b = o > 0 ? o / 100 : 100 / (-o);
+  return Math.max(0, (b * prob - (1 - prob)) / b) * bankroll;
+}
+
+/* ===== PROP MODEL ===== */
+function computePropModel() {
+  const line = parseFloat(document.getElementById('propLine').value);
+  if (isNaN(line) || line <= 0) return null;
+
+  const sport = document.getElementById('sport').value;
+  const propType = document.getElementById('propType').value;
+  const stdDevPct = getVariance(sport, propType);
+
+  const l5 = parseFloat(document.getElementById('l5avg').value);
+  const l10 = parseFloat(document.getElementById('l10avg').value);
+  const sea = parseFloat(document.getElementById('seasonavg').value);
+  const h2h = parseFloat(document.getElementById('h2havg').value);
+  const loc = parseFloat(document.getElementById('locationavg').value);
+  const hitRaw = parseFloat(document.getElementById('hitrate').value);
+  const oppRank = parseFloat(document.getElementById('opprank').value);
+  const injAdj = parseFloat(document.getElementById('injFlag').value) || 0;
+  const paceAdj = parseFloat(document.getElementById('paceFlag').value) || 0;
+
+  const W = {l5: 0.35, l10: 0.25, sea: 0.15, h2h: 0.10, loc: 0.05};
+  let weightedAvg = 0, usedW = 0;
+  const signals = [];
+
+  const inputs = [
+    {val: l5, w: W.l5, label: 'L5 avg'},
+    {val: l10, w: W.l10, label: 'L10 avg'},
+    {val: sea, w: W.sea, label: 'Season avg'},
+    {val: h2h, w: W.h2h, label: 'H2H avg'},
+    {val: loc, w: W.loc, label: 'Location avg'}
+  ];
+
+  inputs.forEach(inp => {
+    if (!isNaN(inp.val) && inp.val > 0) {
+      weightedAvg += inp.val * inp.w;
+      usedW += inp.w;
+      signals.push({label: inp.label, value: inp.val, isPercent: false});
+    }
+  });
+
+  if (usedW === 0) return null;
+  weightedAvg = weightedAvg / usedW;
+
+  const stdDev = Math.max(1, line * stdDevPct);
+  const spread = weightedAvg - line;
+  let baseProb = normCDF(spread / stdDev);
+
+  let oppAdj = 0;
+  if (!isNaN(oppRank)) {
+    const mid = 16;
+    oppAdj = ((mid - oppRank) / mid) * 0.04;
+  }
+
+  let hitAdj = 0;
+  if (!isNaN(hitRaw)) {
+    hitAdj = (hitRaw / 100 - 0.5) * 0.12;
+    signals.push({label: 'Hit rate', value: hitRaw, isPercent: true});
+  }
+
+  const modelProb = Math.min(0.97, Math.max(0.03, baseProb + oppAdj + hitAdj + injAdj + paceAdj));
+
+  return {
+    prob: modelProb,
+    signals,
+    modelAvg: weightedAvg,
+    stdDevPct,
+    sport: SPORT_NAMES[sport] || sport,
+    propType
+  };
+}
+
+/* ===== SIGNAL BARS ===== */
+function renderSignalBars(signals, propLine) {
+  const container = document.getElementById('signalBars');
+  container.innerHTML = signals.map(s => {
+    let pct, color, display;
+    if (s.isPercent) {
+      pct = Math.min(100, s.value);
+      color = s.value >= 55 ? '#4caf50' : s.value >= 45 ? '#aaa' : '#e24b4a';
+      display = s.value.toFixed(0) + '%';
+    } else {
+      const ratio = Math.min(1.5, s.value / Math.max(1, propLine));
+      pct = Math.min(100, ratio * 66.7);
+      color = s.value > propLine * 1.03 ? '#4caf50' : s.value < propLine * 0.97 ? '#e24b4a' : '#aaa';
+      display = s.value.toFixed(1);
+    }
+    return `<div class="signal-row">
+      <span class="signal-lbl">${s.label}</span>
+      <div class="signal-track"><div class="signal-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
+      <span class="signal-val">${display}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ===== SHARP BOOK PROFILES by sport/market ===== */
+const SHARP_PROFILES = {
+  nfl: {
+    spread:   { rec: ['Pinnacle','Circa'], weights: [40,38,12,10,0], note: 'Circa is co-equal with Pinnacle on NFL spreads — one of the sharpest NFL markets in the world. Add Bet105 as book 4.' },
+    total:    { rec: ['Pinnacle','Circa'], weights: [40,38,12,10,0], note: 'Same as spreads — Circa is the gold standard for NFL totals.' },
+    moneyline:{ rec: ['Pinnacle','Circa'], weights: [45,30,15,10,0], note: 'Pinnacle leads on NFL moneylines. Circa strong second.' },
+    prop:     { rec: ['Pinnacle','DraftKings','FanDuel'], weights: [35,15,15,20,15], note: 'NFL props: Pinnacle where available, DraftKings and FanDuel sharpest for US props. Add Bet105 as book 4.' }
+  },
+  nba: {
+    spread:   { rec: ['Pinnacle','Prophet Exchange'], weights: [50,22,18,10,0], note: 'Pinnacle is king on NBA spreads. Prophet Exchange exchange odds are near-true.' },
+    total:    { rec: ['Pinnacle','Prophet Exchange'], weights: [50,22,18,10,0], note: 'Pinnacle dominates NBA totals. Prophet Exchange as second.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [55,22,13,10,0], note: 'Pinnacle is far ahead of others on NBA moneylines.' },
+    prop:     { rec: ['FanDuel','DraftKings'], weights: [20,30,25,15,10], note: 'NBA props: FanDuel is one of the sharpest prop books. Pinnacle has limited NBA prop coverage.' }
+  },
+  mlb: {
+    spread:   { rec: ['Pinnacle'], weights: [55,18,17,10,0], note: 'Pinnacle leads MLB run lines. Circa has good coverage too.' },
+    total:    { rec: ['Pinnacle'], weights: [55,18,17,10,0], note: 'Pinnacle is the primary sharp reference for MLB totals.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [60,18,12,10,0], note: 'Pinnacle is by far the sharpest MLB moneyline book.' },
+    prop:     { rec: ['DraftKings','FanDuel'], weights: [20,28,27,15,10], note: 'MLB props: Pinnacle coverage is thin. DraftKings and FanDuel are the sharpest MLB prop references.' }
+  },
+  nhl: {
+    spread:   { rec: ['Pinnacle'], weights: [55,18,17,10,0], note: 'Pinnacle dominates NHL puck lines.' },
+    total:    { rec: ['Pinnacle'], weights: [55,18,17,10,0], note: 'Pinnacle is primary for NHL totals.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [60,18,12,10,0], note: 'Pinnacle is the sharpest NHL moneyline reference.' },
+    prop:     { rec: ['DraftKings','FanDuel'], weights: [20,28,27,15,10], note: 'NHL props: Use DraftKings/FanDuel — Pinnacle coverage very limited.' }
+  },
+  ncaaf: {
+    spread:   { rec: ['Pinnacle','Circa'], weights: [40,38,12,10,0], note: 'NCAAF: Circa rivals Pinnacle on college football spreads. Both essential.' },
+    total:    { rec: ['Pinnacle','Circa'], weights: [40,38,12,10,0], note: 'Same as spreads — Circa is excellent on NCAAF totals.' },
+    moneyline:{ rec: ['Pinnacle','Circa'], weights: [45,33,12,10,0], note: 'Both Pinnacle and Circa sharp on NCAAF moneylines.' },
+    prop:     { rec: ['DraftKings'], weights: [25,25,30,20,0], note: 'NCAAF props: Limited sharp coverage. DraftKings is best available reference.' }
+  },
+  ncaab: {
+    spread:   { rec: ['Pinnacle'], weights: [55,18,17,10,0], note: 'Pinnacle leads NCAAB. Market is thinner than NBA — treat with more caution.' },
+    total:    { rec: ['Pinnacle'], weights: [55,18,17,10,0], note: 'Pinnacle primary for NCAAB totals. Lower liquidity than pro leagues.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [60,18,12,10,0], note: 'Pinnacle is the sharpest NCAAB moneyline reference.' },
+    prop:     { rec: ['DraftKings'], weights: [25,25,30,20,0], note: 'NCAAB props very limited. DraftKings best available.' }
+  },
+  wnba: {
+    spread:   { rec: ['Pinnacle','DraftKings'], weights: [45,20,15,20,0], note: 'WNBA: Pinnacle has decent coverage. DraftKings/FanDuel are sharp references — add DK as book 4.' },
+    total:    { rec: ['Pinnacle','DraftKings'], weights: [45,20,15,20,0], note: 'WNBA totals: blend Pinnacle with DK/FD for best consensus.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [50,20,15,15,0], note: 'WNBA moneylines: Pinnacle leads, supplement with DraftKings.' },
+    prop:     { rec: ['DraftKings','FanDuel'], weights: [25,25,20,20,10], note: 'WNBA props: DraftKings and FanDuel are sharpest prop references. Pinnacle coverage is limited.' }
+  },
+  soccer: {
+    spread:   { rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'Soccer / MLS: Pinnacle is the world\'s sharpest soccer book by a wide margin.' },
+    total:    { rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'Pinnacle dominates soccer totals globally.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'Pinnacle is the gold standard for soccer moneylines worldwide.' },
+    prop:     { rec: ['Pinnacle'], weights: [65,15,10,10,0], note: 'Soccer player props: Pinnacle has reasonable coverage and is sharpest available.' }
+  },
+  mma: {
+    spread:   { rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'MMA: Pinnacle is the sharpest MMA book. Lines move fast around weigh-ins.' },
+    total:    { rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'MMA totals (rounds): Pinnacle is primary reference.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [75,10,5,10,0], note: 'MMA moneylines: Pinnacle dominates. Line movement around lineup news is critical.' },
+    prop:     { rec: ['Pinnacle','DraftKings'], weights: [50,15,15,20,0], note: 'MMA props: Pinnacle and DraftKings both relevant.' }
+  },
+  golf: {
+    spread:   { rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'Golf: Pinnacle is sharpest. High variance — width matters more here than other sports.' },
+    total:    { rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'Golf totals/scores: Pinnacle primary. Consider skipping wide markets.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [70,10,10,10,0], note: 'Golf outright/matchup: Pinnacle leads.' },
+    prop:     { rec: ['Pinnacle','DraftKings'], weights: [50,15,15,20,0], note: 'Golf props (birdies, bogeys): Pinnacle and DraftKings.' }
+  },
+  other: {
+    spread:   { rec: ['Pinnacle'], weights: [55,20,15,10,0], note: 'Unknown sport: default to Pinnacle as primary reference.' },
+    total:    { rec: ['Pinnacle'], weights: [55,20,15,10,0], note: 'Unknown sport: default to Pinnacle.' },
+    moneyline:{ rec: ['Pinnacle'], weights: [55,20,15,10,0], note: 'Unknown sport: default to Pinnacle.' },
+    prop:     { rec: ['Pinnacle','DraftKings'], weights: [40,25,20,15,0], note: 'Unknown prop: use both Pinnacle and DraftKings where available.' }
+  }
+};
+
+function getMarketCategory() {
+  const mode = currentMode;
+  if (mode === 'prop') return 'prop';
+  const mkt = (document.getElementById('mkt').value || '').toLowerCase();
+  if (mkt.includes('total') || mkt.includes('over') || mkt.includes('under')) return 'total';
+  if (mkt.includes('spread') || mkt.includes('+') || mkt.match(/[+-]\d+\.?\d*\s/)) return 'spread';
+  if (mkt.includes('moneyline') || mkt.includes('ml') || mkt.includes('win')) return 'moneyline';
+  return 'spread'; // default
+}
+
+function autoSetProfile() {
+  const sport = document.getElementById('sport').value;
+  const mktCat = getMarketCategory();
+  const profile = (SHARP_PROFILES[sport] || SHARP_PROFILES.other)[mktCat] || SHARP_PROFILES.other.spread;
+
+  const w = profile.weights;
+
+  /* Build ordered book list — recommended books first, then fill remaining slots */
+  const allBooks = ['Pinnacle', 'Circa', 'Prophet Exchange', 'Bet105', 'Betfair Exchange',
+                    'DraftKings', 'FanDuel'];
+  const recBooks = profile.rec || [];
+  const ordered = [...recBooks];
+  for (const b of allBooks) {
+    if (ordered.length >= 5) break;
+    if (!ordered.map(x => x.toLowerCase()).includes(b.toLowerCase())) ordered.push(b);
+  }
+
+  /* Update named weights */
+  namedWeights = ordered.slice(0, 5).map((name, i) => ({ name, weight: w[i] || 0 }));
+
+  /* Always update sharp book row names to match recommended books */
+  while (sharpBooks.length < namedWeights.filter(b => b.weight > 0).length) {
+    sharpBooks.push({ name: '', a: '', b: '' });
+  }
+  namedWeights.forEach((nw, i) => {
+    if (i < sharpBooks.length) {
+      sharpBooks[i].name = nw.name;
+    }
+  });
+
+  renderSharpRows();
+  renderWeightRows();
+
+  const box = document.getElementById('profileBox');
+  box.style.display = 'block';
+  box.innerHTML = `<strong>⚡ ${document.getElementById('sport').options[document.getElementById('sport').selectedIndex].text} ${mktCat} profile applied</strong><br>
+  Recommended sharp references: <strong>${profile.rec.join(' · ')}</strong><br>
+  ${profile.note}<br>
+  <span style="font-size:11px;opacity:0.8">Sharp book rows updated — enter the odds for each book above.</span>`;
+}
+
+/* ===== NAME-BASED BOOK WEIGHT SYSTEM ===== */
+const BOOK_WEIGHT_MAP = {
+  'pinnacle': 0,
+  'circa': 1,
+  'circa sports': 1,
+  'prophet exchange': 2,
+  'prophet': 2,
+  'bet105': 3,
+  'betfair': 4,
+  'betfair exchange': 4,
+  'novig': 2,
+  'sporttrade': 3,
+  '1xbet': 4,
+  'ps3838': 0,
+  'bookmaker': 1,
+  'draftkings': 3,
+  'fanduel': 4,
+  'draftkings sportsbook': 3,
+  'fanduel sportsbook': 4
+};
+
+/* Default named weights — used by autoSetProfile and renderWeightRows */
+let namedWeights = [
+  { name: 'Pinnacle', weight: 50 },
+  { name: 'Circa', weight: 30 },
+  { name: 'Prophet Exchange', weight: 20 },
+  { name: 'Bet105', weight: 0 },
+  { name: 'Book 5', weight: 0 }
+];
+
+function renderWeightRows() {
+  const container = document.getElementById('weightRows');
+  if (!container) return;
+  container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
+  container.innerHTML = namedWeights.map((b, i) => `
+    <div class="field">
+      <label style="font-size:11px">${b.name}</label>
+      <input type="number" id="w${i}" value="${b.weight}" min="0" max="100" step="5"
+        style="font-size:13px;padding:6px 8px"
+        oninput="namedWeights[${i}].weight = parseFloat(this.value)||0">
+    </div>
+  `).join('');
+}
+
+function syncWeightsFromBooks() {
+  /* When books are added/renamed, update namedWeights to match */
+  syncSharp();
+  sharpBooks.forEach((b, i) => {
+    if (b.name && i < namedWeights.length) {
+      namedWeights[i].name = b.name || `Book ${i+1}`;
+    }
+  });
+  renderWeightRows();
+}
+
+function getWeightForBook(bookName) {
+  /* Try to match by name first */
+  const key = (bookName || '').toLowerCase().trim();
+  /* Direct name match in namedWeights */
+  const idx = namedWeights.findIndex(w => w.name.toLowerCase().trim() === key);
+  if (idx >= 0) return namedWeights[idx].weight;
+  /* Fuzzy match via BOOK_WEIGHT_MAP slot */
+  const slot = BOOK_WEIGHT_MAP[key];
+  if (slot !== undefined && namedWeights[slot]) return namedWeights[slot].weight;
+  return 10; /* default fallback weight */
+}
+function getWidthInfo(w) {
+  if (!w || isNaN(w)) return null;
+  if (w <= 15) return { label: 'Very tight — maximum confidence', color: 'var(--green)', penalty: 0, grade: 'A' };
+  if (w <= 20) return { label: 'Tight — high confidence', color: 'var(--green)', penalty: 0, grade: 'A-' };
+  if (w <= 25) return { label: 'Moderate — good confidence', color: 'var(--amber)', penalty: 0.05, grade: 'B' };
+  if (w <= 30) return { label: 'Wide — reduced confidence', color: 'var(--amber)', penalty: 0.12, grade: 'C' };
+  if (w <= 40) return { label: 'Very wide — low confidence', color: 'var(--red)', penalty: 0.20, grade: 'D' };
+  return { label: 'Extremely wide — avoid', color: 'var(--red)', penalty: 0.30, grade: 'F' };
+}
+
+function updateWidthDisplay() {
+  const w = parseFloat(document.getElementById('marketWidth').value);
+  const info = getWidthInfo(w);
+  const disp = document.getElementById('widthDisplay');
+  if (!info || isNaN(w)) {
+    disp.textContent = 'Enter width to see rating';
+    disp.style.color = 'var(--text2)';
+    return;
+  }
+  disp.innerHTML = `<span style="font-weight:700;color:${info.color}">${info.grade}</span>&nbsp; ${info.label}${info.penalty > 0 ? ' <span style="color:var(--text3);font-size:11px">(-' + (info.penalty*100).toFixed(0) + '% EV adj)</span>' : ' <span style="color:var(--green);font-size:11px">✓ full EV</span>'}`;
+  disp.style.color = info.color;
+}
+
+function runChecker() {
+  syncSharp();
+
+  const sideKey = document.getElementById('side').value === 'a' ? 'a' : 'b';
+  const targetOdds = parseFloat(document.getElementById('tline').value);
+  const bankroll = parseFloat(document.getElementById('bankroll').value) || 1000;
+  const market = document.getElementById('mkt').value.trim() || 'Unnamed market';
+  const tbook = document.getElementById('tbook').value;
+  const sport = document.getElementById('sport').value;
+  const modelW = currentMode === 'prop' ? Math.min(0.6, Math.max(0, (parseFloat(document.getElementById('modelWeight').value) || 30) / 100)) : 0;
+  const marketWidthRaw = parseFloat(document.getElementById('marketWidth').value);
+  const widthInfo = getWidthInfo(marketWidthRaw);
+
+  if (isNaN(targetOdds)) { alert('Enter a target line in American odds (e.g. -110 or +120).'); return; }
+
+  let sharpProb = 0, usedW = 0, breakdown = [];
+  const warns = [];
+
+  let totalW = 0;
+  sharpBooks.forEach(b => {
+    if (b.a && b.b) totalW += getWeightForBook(b.name);
+  });
+
+  sharpBooks.forEach((b, i) => {
+    if (!b.a || !b.b) return;
+    const nv = noVig(b.a, b.b);
+    if (!nv) return;
+    const rawW = getWeightForBook(b.name);
+    const w = totalW > 0 ? rawW / totalW : 1 / sharpBooks.filter(x => x.a && x.b).length;
+    const p = sideKey === 'a' ? nv.a : nv.b;
+    sharpProb += p * w;
+    usedW += w;
+    breakdown.push(`${b.name || 'Book ' + (i+1)}: ${probToAm(p)} (${(p*100).toFixed(1)}%)`);
+  });
+
+  if (usedW === 0) { alert('Enter at least one sharp book with both sides filled in.'); return; }
+  sharpProb /= usedW;
+
+  /* Single book confidence penalty */
+  const sharpBookCount = sharpBooks.filter(b => b.a && b.b).length;
+  const singleBook = sharpBookCount < 2;
+  if (singleBook) {
+    sharpProb = sharpProb * 0.65 + 0.5 * 0.35;
+  }
+
+  /* Market width penalty — shrink edge toward implied prob */
+  let widthPenalty = 0;
+  if (widthInfo && widthInfo.penalty > 0) {
+    widthPenalty = widthInfo.penalty;
+    const impliedNow = amToProb(targetOdds);
+    sharpProb = sharpProb * (1 - widthPenalty) + impliedNow * widthPenalty;
+  }
+
+  let compositeProb = sharpProb;
+  let modelResult = null;
+
+  if (currentMode === 'prop') {
+    modelResult = computePropModel();
+    if (modelResult && modelResult.prob !== null) {
+      compositeProb = sharpProb * (1 - modelW) + modelResult.prob * modelW;
+    }
+  }
+
+  const ev = calcEV(compositeProb, targetOdds);
+  if (ev === null) return;
+  const evPct = ev * 100;
+  const impliedProb = amToProb(targetOdds);
+  const fairAm = probToAm(compositeProb);
+  const clvEdge = compositeProb - impliedProb;
+
+  let modelSharpDiff = 0;
+  if (modelResult) modelSharpDiff = Math.abs(modelResult.prob - sharpProb);
+
+  const strongBet = evPct >= 3 && (!modelResult || modelSharpDiff < 0.06) && !singleBook;
+  let verdict, pillClass, pillText;
+  if (strongBet) { verdict = 'STRONG BET'; pillClass = 'v-strong'; pillText = 'STRONG BET'; }
+  else if (evPct >= 2 && !singleBook) { verdict = 'BET'; pillClass = 'v-bet'; pillText = 'BET'; }
+  else if (evPct >= 0.5) { verdict = 'EDGE'; pillClass = 'v-edge'; pillText = 'EDGE'; }
+  else if (evPct >= 0) { verdict = 'MARGINAL'; pillClass = 'v-marginal'; pillText = 'MARGINAL'; }
+  else { verdict = 'SKIP'; pillClass = 'v-skip'; pillText = 'SKIP'; }
+
+  const kFull = kellyBet(compositeProb, targetOdds, bankroll);
+  const kQtr = kFull / 4;
+  const maxUnit = parseFloat(document.getElementById('maxUnit').value) || 10;
+  const fmt = v => '$' + v.toFixed(2);
+  const tLineStr = targetOdds > 0 ? '+' + targetOdds : String(targetOdds);
+
+  /* Confidence grade — combines all factors */
+  let confScore = 100;
+  if (singleBook) confScore -= 35;
+  if (widthInfo) {
+    if (widthInfo.grade === 'B') confScore -= 10;
+    else if (widthInfo.grade === 'C') confScore -= 20;
+    else if (widthInfo.grade === 'D') confScore -= 35;
+    else if (widthInfo.grade === 'F') confScore -= 50;
+  }
+  if (modelResult && modelSharpDiff >= 0.08) confScore -= 15;
+  else if (modelResult && modelSharpDiff >= 0.03) confScore -= 5;
+  confScore = Math.max(0, Math.min(100, confScore));
+
+  let confGrade, confLabel, confMult, confColor;
+  if (confScore >= 85) { confGrade = 'A'; confLabel = 'High confidence'; confMult = 1.0; confColor = 'var(--green)'; }
+  else if (confScore >= 70) { confGrade = 'B'; confLabel = 'Good confidence'; confMult = 0.75; confColor = 'var(--green)'; }
+  else if (confScore >= 50) { confGrade = 'C'; confLabel = 'Moderate confidence'; confMult = 0.5; confColor = 'var(--amber)'; }
+  else if (confScore >= 30) { confGrade = 'D'; confLabel = 'Low confidence'; confMult = 0.25; confColor = 'var(--red)'; }
+  else { confGrade = 'F'; confLabel = 'Very low — consider skipping'; confMult = 0; confColor = 'var(--red)'; }
+
+  /* Recommended stake calculation */
+  const flatMode = document.getElementById('flatMode').checked;
+  const flatAmt = parseFloat(document.getElementById('flatAmt').value) || 5;
+  const ojSize = parseFloat(document.getElementById('ojSize').value);
+
+  let recStake, recNote;
+  if (flatMode) {
+    recStake = flatAmt;
+    recNote = `Flat bet mode — $${flatAmt} regardless of EV`;
+  } else if (!isNaN(ojSize) && ojSize > 0) {
+    const adjusted = Math.min(ojSize * confMult, maxUnit);
+    recStake = adjusted;
+    recNote = `OddsJam $${ojSize} × ${(confMult*100).toFixed(0)}% confidence (${confGrade}) = $${(ojSize*confMult).toFixed(2)}${ojSize*confMult > maxUnit ? ` → capped at $${maxUnit} max unit` : ''}`;
+  } else {
+    recStake = Math.min(kQtr, maxUnit);
+    recNote = kQtr > maxUnit ? `Quarter Kelly $${kQtr.toFixed(2)} → capped at $${maxUnit} max unit` : `Quarter Kelly sizing`;
+  }
+
+  /* Update sizing DOM */
+  const recEl = document.getElementById('recStake');
+  recEl.textContent = recStake > 0 ? fmt(recStake) : 'SKIP';
+  recEl.style.color = recStake > 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('recStakeNote').textContent = recNote || '—';
+  document.getElementById('confGrade').textContent = confGrade + ' — ' + confLabel;
+  document.getElementById('confGrade').style.color = confColor;
+  document.getElementById('confAdj').textContent = confMult < 1 ? `(size × ${(confMult*100).toFixed(0)}%)` : '(full size)';
+  document.getElementById('maxUnitDisplay').textContent = fmt(maxUnit);
+  document.getElementById('kFull').textContent = kFull > 0 ? fmt(kFull) : '—';
+  document.getElementById('kQtr').textContent = kQtr > 0 ? fmt(kQtr) : '—';
+
+  /* Update DOM */
+  document.getElementById('vPill').className = 'verdict-pill ' + pillClass;
+  document.getElementById('vPill').textContent = pillText;
+  document.getElementById('vEV').innerHTML = (evPct >= 0 ? '+' : '') + evPct.toFixed(2) + '%<sub> expected value</sub>';
+
+  const clvEl = document.getElementById('sCLV');
+  clvEl.textContent = (clvEdge >= 0 ? '+' : '') + (clvEdge * 100).toFixed(2) + '%';
+  clvEl.className = 'stat-val ' + (clvEdge >= 0 ? 'positive' : 'negative');
+
+  document.getElementById('sFair').textContent = fairAm;
+  document.getElementById('sProb').textContent = (compositeProb * 100).toFixed(1) + '%';
+  document.getElementById('sImpl').textContent = (impliedProb * 100).toFixed(1) + '%';
+  document.getElementById('sportNote').textContent = SPORT_NAMES[sport] + (currentMode === 'prop' && modelResult ? ` · ${(modelResult.stdDevPct*100).toFixed(0)}% variance profile · model weight ${(modelW*100).toFixed(0)}%` : '');
+
+  /* Width result box */
+  const widthResultBox = document.getElementById('widthResultBox');
+  if (widthInfo && !isNaN(marketWidthRaw)) {
+    widthResultBox.style.display = 'block';
+    widthResultBox.className = `alert ${widthInfo.grade <= 'B' ? 'alert-info' : widthInfo.grade <= 'C' ? 'alert-warn' : 'alert-danger'}`;
+    widthResultBox.innerHTML = `Market width ${marketWidthRaw}: <strong>${widthInfo.label}</strong>${widthPenalty > 0 ? ` — EV adjusted down by ${(widthPenalty*100).toFixed(0)}% to account for market uncertainty.` : ' — full EV applied.'}`;
+  } else {
+    widthResultBox.style.display = 'none';
+  }
+
+  const edgePct = clvEdge * 100;
+  const barPct = Math.min(100, Math.max(0, (edgePct + 10) / 20 * 100));
+  const bar = document.getElementById('edgeBar');
+  bar.style.width = barPct.toFixed(1) + '%';
+  bar.className = 'bar-fill ' + (edgePct > 0.2 ? 'bar-pos' : edgePct < -0.2 ? 'bar-neg' : 'bar-zero');
+
+  let bkStr = breakdown.join(' · ');
+  if (modelResult) bkStr += `. Model avg: ${modelResult.modelAvg.toFixed(1)} vs line ${document.getElementById('propLine').value || '—'} (${modelResult.sport} ${modelResult.propType})`;
+  document.getElementById('vBreakdown').textContent = `${bkStr}. Target (${tbook}): ${tLineStr}. Composite prob: ${(compositeProb*100).toFixed(2)}% → fair ${fairAm}.`;
+
+  /* Prop signals */
+  const propSig = document.getElementById('propSignals');
+  const ring = document.getElementById('modelRing');
+  const convNote = document.getElementById('convergenceNote');
+
+  if (modelResult) {
+    ring.style.display = 'flex';
+    document.getElementById('modelScoreDisp').textContent = (modelResult.prob * 100).toFixed(0) + '%';
+    propSig.style.display = 'block';
+    document.getElementById('modelProbDisp').textContent = (modelResult.prob * 100).toFixed(1) + '%';
+    document.getElementById('sharpProbDisp').textContent = (sharpProb * 100).toFixed(1) + '%';
+    const convergence = modelSharpDiff < 0.03 ? 'Strong agreement' : modelSharpDiff < 0.08 ? 'Moderate' : 'Divergent — verify news';
+    document.getElementById('agreementDisp').textContent = convergence;
+    document.getElementById('sportProfile').textContent = `${modelResult.sport} ${modelResult.propType} — ${(modelResult.stdDevPct*100).toFixed(0)}% std dev`;
+    if (modelResult.signals.length > 0) renderSignalBars(modelResult.signals, parseFloat(document.getElementById('propLine').value));
+
+    if (modelSharpDiff >= 0.08) {
+      convNote.style.display = 'block';
+      convNote.className = 'alert alert-warn';
+      convNote.textContent = '⚠ Model and sharp books diverge by ' + (modelSharpDiff*100).toFixed(1) + '%. Check for recent news (lineup, injury, weather) before betting.';
+    } else if (modelSharpDiff < 0.03 && evPct >= 2) {
+      convNote.style.display = 'block';
+      convNote.className = 'alert alert-success';
+      convNote.textContent = '✓ Model and sharp books agree within ' + (modelSharpDiff*100).toFixed(1) + '%. Strong convergence — highest confidence signal.';
+    } else {
+      convNote.style.display = 'none';
+    }
+  } else {
+    ring.style.display = 'none';
+    propSig.style.display = 'none';
+    convNote.style.display = 'none';
+  }
+
+  /* Warnings */
+  const warnBox = document.getElementById('warnBox');
+  warnBox.innerHTML = '';
+  if (singleBook) {
+    warns.push('⚠ Only 1 sharp book entered. EV has been adjusted down and verdict capped at EDGE. Add Circa or Prophet Exchange for a real BET signal — single-book lines can produce inflated EV that isn\'t real.');
+  }
+  if (widthInfo && widthInfo.grade === 'D') warns.push('⚠ Market width is very wide (30+). Sharp book is uncertain — this line should be treated with caution even at positive EV.');
+  if (widthInfo && widthInfo.grade === 'F') warns.push('🚫 Market width is extremely wide (40+). Avoid this bet — the fair line is too uncertain to trust.');
+  if (Math.abs(evPct) < 0.5) warns.push('Edge is very thin (<0.5%). The line may have already moved.');
+  if (warns.length) {
+    warnBox.className = 'alert alert-warn';
+    warnBox.innerHTML = warns.join('<br>');
+  }
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+
+  /* Save to log */
+  const entry = {
+    id: Date.now(),
+    ts: new Date().toLocaleString(),
+    market, tbook, tLineStr, verdict, pillClass,
+    evPct: parseFloat(evPct.toFixed(2)),
+    fairAm,
+    compositeProb: parseFloat((compositeProb*100).toFixed(2)),
+    sharpProb: parseFloat((sharpProb*100).toFixed(2)),
+    modelProb: modelResult ? parseFloat((modelResult.prob*100).toFixed(1)) : null,
+    clvEdge: parseFloat((clvEdge*100).toFixed(2)),
+    halfKelly: (kFull/2) > 0 ? parseFloat((kFull/2).toFixed(2)) : 0,
+    qtrKelly: kQtr > 0 ? parseFloat(kQtr.toFixed(2)) : 0,
+    recStake: recStake > 0 ? parseFloat(recStake.toFixed(2)) : 0,
+    maxUnit: parseFloat(maxUnit.toFixed(2)),
+    confGrade,
+    confScore,
+    bankroll,
+    mode: currentMode,
+    sport
+  };
+  betLog.unshift(entry);
+  if (betLog.length > 500) betLog = betLog.slice(0, 500);
+  saveLog().catch(() => {
+    localStorage.setItem(LOG_KEY, JSON.stringify(betLog));
+  });
+}
+
+/* ===== CLOUD SYNC LOG ===== */
+const LOG_KEY = 'sharpBetLog_v2';
+
+async function saveLog() {
+  try {
+    if (window.storage) {
+      await window.storage.set(LOG_KEY, JSON.stringify(betLog), true);
+      setSyncStatus('synced');
+    } else {
+      localStorage.setItem(LOG_KEY, JSON.stringify(betLog));
+      setSyncStatus('local');
+    }
+  } catch(e) {
+    localStorage.setItem(LOG_KEY, JSON.stringify(betLog));
+    setSyncStatus('local');
+  }
+}
+
+async function loadLog() {
+  setSyncStatus('loading');
+  try {
+    if (window.storage) {
+      const res = await window.storage.get(LOG_KEY, true);
+      if (res && res.value) {
+        const cloud = JSON.parse(res.value);
+        const local = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+        betLog = mergeLogArrays(cloud, local);
+        await window.storage.set(LOG_KEY, JSON.stringify(betLog), true);
+        setSyncStatus('synced');
+      } else {
+        const local = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+        if (local.length) {
+          betLog = local;
+          await window.storage.set(LOG_KEY, JSON.stringify(betLog), true);
+        }
+        setSyncStatus('synced');
+      }
+    } else {
+      const local = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      betLog = local.length ? local : betLog;
+      setSyncStatus('local');
+    }
+  } catch(e) {
+    try {
+      const local = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      betLog = local.length ? local : betLog;
+    } catch(e2) { betLog = []; }
+    setSyncStatus('local');
+  }
+  renderLog();
+}
+
+async function syncLog() {
+  await loadLog();
+  renderLog();
+}
+
+function mergeLogArrays(a, b) {
+  const map = new Map();
+  [...a, ...b].forEach(entry => {
+    if (!map.has(entry.id) || entry.placed || entry.result) map.set(entry.id, entry);
+  });
+  return Array.from(map.values()).sort((x,y) => y.id - x.id).slice(0,500);
+}
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncStatus');
+  if (!dot || !txt) return;
+  if (state === 'synced') { dot.style.background = '#4caf50'; txt.textContent = 'Synced — bets available on all devices'; }
+  else if (state === 'loading') { dot.style.background = '#f5c542'; txt.textContent = 'Syncing...'; }
+  else if (state === 'local') { dot.style.background = '#f5c542'; txt.textContent = 'Local only (storage unavailable — export CSV to back up)'; }
+}
+
+/* ===== LOG ACTIONS ===== */
+async function togglePlaced(id) {
+  const b = betLog.find(x => x.id === id);
+  if (!b) return;
+  b.placed = !b.placed;
+  if (!b.placed) { b.result = null; b.staked = null; }
+  await saveLog();
+  renderLog();
+}
+
+async function setResult(id, result) {
+  const b = betLog.find(x => x.id === id);
+  if (!b) return;
+  b.result = b.result === result ? null : result;
+  await saveLog();
+  renderLog();
+}
+
+async function setStaked(id, val) {
+  const b = betLog.find(x => x.id === id);
+  if (!b) return;
+  const n = parseFloat(val);
+  b.staked = isNaN(n) ? null : parseFloat(n.toFixed(2));
+  await saveLog();
+  renderLog();
+}
+
+async function deleteEntry(id) {
+  betLog = betLog.filter(x => x.id !== id);
+  await saveLog();
+  renderLog();
+}
+
+function calcPL(b) {
+  if (!b.placed || !b.result || !b.staked) return null;
+  if (b.result === 'W') {
+    const o = parseFloat(b.tLineStr);
+    const win = o > 0 ? b.staked * (o / 100) : b.staked * (100 / Math.abs(o));
+    return parseFloat(win.toFixed(2));
+  }
+  if (b.result === 'L') return -b.staked;
+  if (b.result === 'P') return 0;
+  return null;
+}
+
+function renderLog() {
+  const c = document.getElementById('logContent');
+  const placed = betLog.filter(b => b.placed);
+  const settled = placed.filter(b => b.result && b.staked);
+
+  document.getElementById('logCount').textContent = betLog.length;
+  document.getElementById('placedCount').textContent = placed.length;
+
+  /* Progress toward 200 */
+  const pct = Math.min(100, (placed.length / 200) * 100);
+  const pb = document.getElementById('progressBar');
+  const pl2 = document.getElementById('progressLabel');
+  const pn = document.getElementById('progressNote');
+  if (pb) pb.style.width = pct.toFixed(1) + '%';
+  if (pl2) pl2.textContent = placed.length + ' / 200 bets placed';
+  if (pn) {
+    if (placed.length >= 200) {
+      pn.textContent = '✓ 200 bets reached — your process is statistically proven. Consider sizing up.';
+      pn.style.color = 'var(--green)';
+      if (pb) pb.style.background = 'var(--green)';
+    } else {
+      pn.textContent = `${200 - placed.length} more bets until your edge is statistically proven. Stay flat until then.`;
+    }
+  }
+
+  if (!betLog.length) {
+    c.innerHTML = '<p style="font-size:13px;color:var(--text3);padding:8px 0">No bets logged yet. Run the checker to get started.</p>';
+    document.getElementById('logSummary').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('logSummary').style.display = 'block';
+
+  const wins = settled.filter(b => b.result === 'W').length;
+  const losses = settled.filter(b => b.result === 'L').length;
+  const pushes = settled.filter(b => b.result === 'P').length;
+  const totalPL = settled.reduce((sum, b) => sum + (calcPL(b) || 0), 0);
+  const totalStaked = settled.reduce((sum, b) => sum + (b.staked || 0), 0);
+  const roi = totalStaked > 0 ? (totalPL / totalStaked) * 100 : null;
+  const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) * 100 : null;
+  const avgEV = placed.length > 0
+    ? placed.reduce((a, b) => a + b.evPct, 0) / placed.length
+    : betLog.reduce((a, b) => a + b.evPct, 0) / betLog.length;
+  const avgCLV = placed.length > 0
+    ? placed.reduce((a, b) => a + (b.clvEdge || 0), 0) / placed.length : null;
+
+  document.getElementById('ls-total').textContent = betLog.length;
+  document.getElementById('ls-bets').textContent = settled.length ? wins + 'W - ' + losses + 'L' + (pushes ? ' - ' + pushes + 'P' : '') : '—';
+  document.getElementById('ls-avgev').textContent = placed.length ? (avgEV >= 0 ? '+' : '') + avgEV.toFixed(2) + '%' : '—';
+  document.getElementById('ls-avgkelly').textContent = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : '—';
+
+  const plColor = totalPL >= 0 ? 'var(--green)' : 'var(--red)';
+  const plStr = settled.length ? (totalPL >= 0 ? '+' : '') + '$' + totalPL.toFixed(2) : '—';
+  const wrStr = winRate !== null ? winRate.toFixed(1) + '%' : '—';
+  const clvStr = avgCLV !== null ? (avgCLV >= 0 ? '+' : '') + avgCLV.toFixed(2) + '%' : '—';
+  const clvColor = avgCLV >= 0 ? 'var(--green)' : 'var(--red)';
+
+  const summaryExtra = document.getElementById('ls-extra');
+  if (summaryExtra) {
+    summaryExtra.innerHTML = `
+      <div class="stat-card"><div class="stat-lbl">Win rate</div><div class="stat-val">${wrStr}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Avg CLV</div><div class="stat-val" style="color:${clvColor}">${clvStr}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Total P&L</div><div class="stat-val" style="color:${plColor}">${plStr}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Total staked</div><div class="stat-val">${totalStaked > 0 ? '$' + totalStaked.toFixed(2) : '—'}</div></div>
+    `;
+  }
+
+  c.innerHTML = `<div style="overflow-x:auto">
+  <table class="log-table" style="min-width:960px">
+    <thead><tr>
+      <th style="width:10%">Date/Time</th>
+      <th style="width:16%">Market</th>
+      <th style="width:5%">Type</th>
+      <th style="width:6%">Book</th>
+      <th style="width:8%">Verdict</th>
+      <th style="width:5%">EV%</th>
+      <th style="width:5%">CLV</th>
+      <th style="width:5%">Conf</th>
+      <th style="width:7%">Rec $</th>
+      <th style="width:7%">Placed</th>
+      <th style="width:7%">Staked</th>
+      <th style="width:9%">Result</th>
+      <th style="width:7%">P&L</th>
+      <th style="width:3%"></th>
+    </tr></thead>
+    <tbody>${betLog.map(b => {
+      const pl = calcPL(b);
+      const plStr = pl !== null ? (pl >= 0 ? '+' : '') + '$' + Math.abs(pl).toFixed(2) : '—';
+      const plColor = pl !== null ? (pl > 0 ? 'var(--green)' : pl < 0 ? 'var(--red)' : 'var(--text2)') : 'var(--text3)';
+      const pillMap = {'v-strong':'p-strong','v-bet':'p-bet','v-edge':'p-edge','v-marginal':'p-marginal','v-skip':'p-skip'};
+      const pc = pillMap[b.pillClass] || 'p-skip';
+      const rec = b.recStake != null ? b.recStake : (b.qtrKelly ? Math.min(b.qtrKelly, b.maxUnit || 10) : null);
+      const stakeVal = b.staked != null ? b.staked : (rec ? parseFloat(rec).toFixed(2) : '');
+      const confColor = b.confGrade === 'A' ? 'var(--green)' : b.confGrade === 'B' ? 'var(--green)' : b.confGrade === 'C' ? 'var(--amber)' : 'var(--red)';
+      const placedBtn = b.placed
+        ? `<button onclick="togglePlaced(${b.id})" style="padding:3px 8px;font-size:11px;font-weight:600;border-radius:4px;border:1px solid var(--green);background:var(--green-bg);color:var(--green);cursor:pointer">✓ Placed</button>`
+        : `<button onclick="togglePlaced(${b.id})" style="padding:3px 8px;font-size:11px;font-weight:500;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer">Place</button>`;
+      return `<tr style="opacity:${b.placed ? '1' : '0.6'}">
+        <td style="color:var(--text3);font-size:10px">${b.ts}</td>
+        <td title="${b.market}" style="max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${b.market}</td>
+        <td><span class="tag">${b.mode === 'prop' ? 'prop' : 'main'}</span></td>
+        <td><span class="tag">${b.tbook}</span></td>
+        <td><span class="pill ${pc}">${b.verdict}</span></td>
+        <td style="font-weight:600;color:${b.evPct >= 2 ? 'var(--green)' : b.evPct >= 0 ? 'var(--text)' : 'var(--red)'}">${b.evPct >= 0 ? '+' : ''}${b.evPct}%</td>
+        <td style="color:${(b.clvEdge||0) >= 0 ? 'var(--green)' : 'var(--red)'}">${(b.clvEdge||0) >= 0 ? '+' : ''}${(b.clvEdge||0).toFixed(2)}%</td>
+        <td style="font-weight:700;color:${confColor}">${b.confGrade || '—'}</td>
+        <td style="font-size:12px;font-weight:700;color:var(--green)">${rec ? '$' + parseFloat(rec).toFixed(2) : '—'}</td>
+        <td>${placedBtn}</td>
+        <td>${b.placed ? `<input type="number" value="${stakeVal}" min="0" step="0.01" onchange="setStaked(${b.id}, this.value)" style="width:60px;font-size:12px;padding:3px 5px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text)" placeholder="$">` : '<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+        <td>${b.placed ? `<div style="display:flex;gap:3px">
+            <button onclick="setResult(${b.id},'W')" style="padding:2px 5px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='W'?'var(--green)':'var(--border2)'};background:${b.result==='W'?'var(--green-bg)':'var(--surface2)'};color:${b.result==='W'?'var(--green)':'var(--text2)'};cursor:pointer">W</button>
+            <button onclick="setResult(${b.id},'L')" style="padding:2px 5px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='L'?'var(--red)':'var(--border2)'};background:${b.result==='L'?'var(--red-bg)':'var(--surface2)'};color:${b.result==='L'?'var(--red)':'var(--text2)'};cursor:pointer">L</button>
+            <button onclick="setResult(${b.id},'P')" style="padding:2px 5px;font-size:11px;font-weight:700;border-radius:4px;border:1.5px solid ${b.result==='P'?'var(--blue)':'var(--border2)'};background:${b.result==='P'?'var(--blue-bg)':'var(--surface2)'};color:${b.result==='P'?'var(--blue)':'var(--text2)'};cursor:pointer">P</button>
+          </div>` : '<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+        <td style="font-weight:600;color:${plColor}">${plStr}</td>
+        <td><button onclick="deleteEntry(${b.id})" style="padding:2px 6px;font-size:12px;border-radius:4px;border:1px solid var(--border2);background:none;color:var(--text3);cursor:pointer" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">✕</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+async function clearLog() {
+  if (!confirm('Clear all ' + betLog.length + ' logged bets? This cannot be undone.')) return;
+  betLog = [];
+  await saveLog();
+  renderLog();
+}
+
+function exportCSV() {
+  if (!betLog.length) { alert('No bets to export.'); return; }
+  const headers = ['Date/Time','Market','Type','Book','Line','Verdict','EV%','Fair line','CLV%','Conf Grade','Rec Stake','Placed','Staked','Result','P&L','Model prob','Sport','Bankroll'];
+  const rows = betLog.map(b => {
+    const pl = calcPL(b);
+    return [
+      '"' + b.ts + '"',
+      '"' + (b.market || '').replace(/"/g, '""') + '"',
+      b.mode || 'main',
+      '"' + (b.tbook || '') + '"',
+      b.tLineStr,
+      b.verdict,
+      b.evPct,
+      b.fairAm,
+      b.clvEdge || 0,
+      b.confGrade || '',
+      b.recStake != null ? b.recStake : '',
+      b.placed ? 'Yes' : 'No',
+      b.staked != null ? b.staked : '',
+      b.result || '',
+      pl !== null ? pl : '',
+      b.modelProb !== null && b.modelProb !== undefined ? b.modelProb : '',
+      b.sport || '',
+      b.bankroll || ''
+    ].join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'sharp_bet_log_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ===== INIT ===== */
+renderSharpRows();
+renderWeightRows();
+setMode('main');
+updateSideLabels();
+loadLog();
+</script>
+</body>
+</html>
